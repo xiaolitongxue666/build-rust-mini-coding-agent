@@ -40,6 +40,8 @@
 
 第 12 课：TTY 整屏程序占界面。循环不 import `ui`。`println!` 进管子。审批走通道。管道 / `BYO_PLAIN_INPUT=1` 仍是 `stdin.lines()`。
 
+第 13 课：收束，只有 `follow_along/zh/13-whats-next.md`。不写练习里的 web_fetch / CodeReview / 流式 / PermissionPolicy。14–19 未点名不写。
+
 ## 例子与总体
 
 官网只冻 `examples/minimal`，`main.go` 接线全功能。本仓库：

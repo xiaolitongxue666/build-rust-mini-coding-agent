@@ -3,6 +3,7 @@
 #
 # 单课 demo = examples/NN-*.rs。总体 = src/main.rs。
 # 新课：加 example + Cargo.toml 一行 + 这里改 ready / cargo_example:lesson_NN，再并进库。
+# 第 13 课是收束：docs，没有 cargo 目标。14–19 未点名保持 pending。
 # 课上的例子走 Claude；本仓库 ready 课的 live 路径是 DeepSeek。
 #
 # status:

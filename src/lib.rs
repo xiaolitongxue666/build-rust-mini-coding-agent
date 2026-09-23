@@ -28,6 +28,7 @@
 //! 依赖方向：`api` 在底。逻辑认 api。UI 可以认逻辑，不要反向。
 //! 第 11 课：`tools` 不认 `subagent`。`agent` 不认 `subagent`。胶水在 `delegate`。
 //! 第 12 课：`ui` 读 `Active()`。`agent` 不再 import `ui`，没有环。
+//! 第 13 课：核心书收束。流式 / MCP / TokenBudget / PermissionPolicy 等点名再写。
 
 pub mod agent;
 pub mod api;
