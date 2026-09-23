@@ -23,5 +23,5 @@ if [[ "${RUN_LIVE:-}" == "1" ]]; then
   log_info "RUN_LIVE=1：后续测试可以打真实 API"
 fi
 
+# 总体：库 + bin。单课 example 走 scripts/test-lessons.sh。
 cargo test
-bash "${SCRIPT_DIR}/test-lessons.sh"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# 启动第 01 课快照。这里才加载 DeepSeek 密钥（不是 Claude）。
-# Windows MSYS 的 HOME 可能是 /home/<user>；secrets.sh 会再认本机用户目录。
+# 无参：总体 src/main.rs（cargo run）。有参：单课 example（run.sh 01）。
+# 这里才加载 DeepSeek 密钥。Windows MSYS 的 HOME 可能是 /home/<user>。
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,6 +12,8 @@ source "${SCRIPT_DIR}/lib/proxy.sh"
 source "${SCRIPT_DIR}/lib/rust.sh"
 # shellcheck source=lib/secrets.sh
 source "${SCRIPT_DIR}/lib/secrets.sh"
+# shellcheck source=lib/lessons.sh
+source "${SCRIPT_DIR}/lib/lessons.sh"
 
 ROOT="$(repo_root)"
 export_proxy_if_available || true
@@ -19,5 +21,30 @@ ensure_cargo_path
 load_deepseek_key
 export_live_llm_defaults
 cd "$ROOT"
-# 第 01 课的可运行快照。第 02 课起改成 cargo run（src/ 母本）。
-cargo run --example lesson_01
+
+if [[ $# -eq 0 ]]; then
+  cargo run
+  exit 0
+fi
+
+id="$(normalize_lesson_id "$1")"
+row="$(lesson_row "$id")"
+if [[ -z "$row" ]]; then
+  log_err "没有第 ${id} 课"
+  exit 1
+fi
+status="$(lesson_field "$row" 2)"
+how="$(lesson_field "$row" 4)"
+if [[ "$status" != "ready" ]]; then
+  log_err "第 ${id} 课尚未实现（status=${status}）"
+  exit 1
+fi
+case "$how" in
+  cargo_example:*)
+    cargo run --example "${how#cargo_example:}"
+    ;;
+  *)
+    log_err "第 ${id} 课没有可运行的 example（how=${how}）"
+    exit 1
+    ;;
+esac

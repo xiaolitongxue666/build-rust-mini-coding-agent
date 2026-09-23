@@ -6,10 +6,24 @@ license = "MIT"
 publish = false
 description = "用 Rust 按 byo-coding-agent 课程重建的学习用 harness；live 走 DeepSeek"
 
-# 官网只冻结第 01 课这一份「无抽象」快照。02 起长在 src/，不要每课再复制一份 agent。
+# bin = 总体（src/main.rs）。每个 [[example]] = 单课 demo。
+# https://doc.rust-lang.org/cargo/reference/cargo-targets.html#examples
+# test = true：example 里的 #[test] 给 test-lessons.sh 用。
+
 [[example]]
 name = "lesson_01"
 path = "examples/01-the-agent-loop.rs"
+test = true
+
+[[example]]
+name = "lesson_02"
+path = "examples/02-the-permission-gate.rs"
+test = true
+
+[[example]]
+name = "lesson_03"
+path = "examples/03-the-provider-interface.rs"
+test = true
 
 [dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls", "http2", "charset", "system-proxy"] }

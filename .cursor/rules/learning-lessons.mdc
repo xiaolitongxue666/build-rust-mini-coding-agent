@@ -9,6 +9,8 @@ alwaysApply: true
 
 - 这是学习仓库。用户读完第 N 课后，才实现第 N 课。
 - 对照 `follow_along/zh/` 与 byoharness 原章；不要提前引入后续课的抽象。
-- 注释用中文写「为什么」（取舍、失败模式、与 Go 课的差异），关键处标课号。
+- 注释对应该章课程页面：图、词表、步骤、陷阱写在对应代码旁；中文写「为什么」，标课号。
+- 单课 demo 在 `examples/NN-*.rs`；总体在 `src/main.rs`；共享实现只在 `src/` 库。
+- `run.sh` 无参跑总体，加课号跑单课。`test.sh` 总体，`test-lessons.sh` 单课。
 - 写代码不读 API key。只有 `scripts/run.sh` / `RUN_LIVE=1` 才打 DeepSeek。
 - 课用 Claude 词表，本仓库 agent 实际访问 DeepSeek；系统提示自称 DeepSeek，不要写成 Claude。

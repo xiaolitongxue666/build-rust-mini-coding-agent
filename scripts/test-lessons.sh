@@ -5,8 +5,8 @@
 #   bash scripts/test-lessons.sh 01        # 只跑第 01 课
 #   bash scripts/test-lessons.sh list      # 打印登记表
 #
-# 第 02 课及之后实现时：在 scripts/lib/lessons.sh 把 pending 改成 ready，
-# 并写上 cargo_test:lesson_0N 或新的 example 名。不要为了测试去复制整份 agent。
+# 单课测试。总体测试走 scripts/test.sh。
+# 新课：加 examples/NN-*.rs 和 Cargo.toml 的 [[example]]，并改 lessons.sh。
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -12,8 +12,9 @@
 
 1. **未点名的课不要写。** 用户说「读完第 N 课」或「实现第 N 课」之后，只落地第 N 课。
 2. **先对课，再改代码。** 打开对应的 `follow_along/zh/NN-*.md` 和 byoharness 原章，按那一课的形状实现；HEAD 里更后的抽象先别提前引入。
-3. **注释写为什么。** 中文。写设计取舍、失败模式、与 Go 原课 / DeepSeek 线协议的差异。关键处标课号，例如 `// 第 07 课：截断必须落在干净边界`。不要写复述下一行代码的注释，不要删已有课号注释。
-4. **一次少动文件。** 本课能跑、能 `bash scripts/check.sh` 即可。下一课留给下一课。
+3. **注释对课程页面。** 中文写「为什么」。文件头对应该章标题和原章链接；课上的图、词表、步骤、陷阱要在对应代码旁能对上。关键处标课号，例如 `// 第 02 课：拒绝必须是 is_error`。不要写复述下一行的注释，不要删已有课号注释。
+4. **双入口、一份实现。** 单课小 demo 在 `examples/NN-<slug>.rs`；总体在 `src/main.rs`（对齐官网 `main.go`）。共享循环/工具只写在 `src/` 库里，example 与 bin 只接线。不要再复制一整份 agent。
+5. **一次少动文件。** 本课能跑、能 `bash scripts/check.sh` 即可。下一课留给下一课。
 
 ## 密钥
 
@@ -33,15 +34,16 @@
 
 三个扩展点保持正交：`Provider`、`Tool` + `Registry`、`CompactionStrategy`。新能力优先挂进已有缝，不要另起一套平行抽象。
 
-## 例子放哪
+## 例子与总体
 
-官网只给了 **一份** 冻结快照：第 01 课的 `examples/minimal`（看清循环，没有任何后续抽象）。02–19 在同一份 harness 上长，HEAD 才是母本。
+官网只冻 `examples/minimal`，`main.go` 接线全功能。本仓库：
 
-本仓库对齐：
+- **单课 demo**：`examples/NN-<slug>.rs` + `[[example]] name = "lesson_NN"`（`test = true`）。对应该章页面写详细注释；只接线本课形状（01 无门，02 有门）。
+- **总体**：`src/main.rs` 把已完成课接到一起。实现在 `src/lib.rs` 各模块，不在 example 里再抄一份。
+- **跑**：`bash scripts/run.sh` → `cargo run`（总体）；`bash scripts/run.sh 01` → `cargo run --example lesson_01`。
+- **测**：`bash scripts/test.sh` → 总体 `cargo test`；`bash scripts/test-lessons.sh [NN]` → 单课 example。`check.sh` 两路都跑。
 
-- `examples/NN-*.rs`：只在该课需要「无后续抽象的可运行快照」时才加。现在只有 `examples/01-the-agent-loop.rs`。
-- `src/`：第 02 课起的生长母本。不要每课再复制一份完整 agent。
-- 按课测试：`bash scripts/test-lessons.sh` / `bash scripts/test-lessons.sh 01`。新课实现后改 `scripts/lib/lessons.sh` 的 status，不要靠新 example 凑课号。
+新课：先加 example 快照，再把该课能力并进库 + `main.rs`。不要提前引入后续课抽象。
 
 ## 验证
 

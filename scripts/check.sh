@@ -17,5 +17,5 @@ cd "$ROOT"
 
 cargo fmt --all -- --check
 cargo clippy --all-targets -- -D warnings
-cargo test
+bash "${SCRIPT_DIR}/test.sh"
 bash "${SCRIPT_DIR}/test-lessons.sh"

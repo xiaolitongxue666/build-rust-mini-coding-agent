@@ -8,7 +8,7 @@ Agent 约定：[AGENTS.md](AGENTS.md)。读完一课再实现一课。
 
 ## 当前进度
 
-第 01 课已落地：[`examples/01-the-agent-loop.rs`](examples/01-the-agent-loop.rs) — 官网同款的冻结快照（REPL + DeepSeek 循环 + 三个工具）。生长母本从第 02 课起在 `src/`。
+第 03 课已落地。总体（01 循环 + 02 权限门 + 03 Provider）：[`src/main.rs`](src/main.rs)。单课 demo：[`examples/01-the-agent-loop.rs`](examples/01-the-agent-loop.rs)、[`examples/02-the-permission-gate.rs`](examples/02-the-permission-gate.rs)、[`examples/03-the-provider-interface.rs`](examples/03-the-provider-interface.rs)。live 默认 `DeepSeekProvider`；单测用 `MockProvider`。
 
 ## 脚本
 
@@ -19,11 +19,14 @@ Windows 上 MSYS 的 `$HOME` 经常是 `/home/<user>`，和 `C:\Users\<user>` �
 ```bash
 bash scripts/bootstrap.sh         # 安装 rustup / rustfmt / clippy
 bash scripts/build.sh
-bash scripts/test.sh              # 默认不读密钥
-bash scripts/test-lessons.sh      # 已实现的课；可跟 01 / list
+bash scripts/test.sh              # 总体（库 + bin），不读密钥
+bash scripts/test-lessons.sh      # 单课 example；可跟 01 / list
 bash scripts/check.sh
 bash scripts/probe-llm.sh         # 打一次官方 completions，确认密钥（不打印 key）
-bash scripts/run.sh               # 加载 DeepSeek 密钥后启动第 01 课快照
+bash scripts/run.sh               # 总体 src/main.rs
+bash scripts/run.sh 01            # 第 01 课 demo
+bash scripts/run.sh 02            # 第 02 课 demo
+bash scripts/run.sh 03            # 第 03 课 demo
 ```
 
 Windows PowerShell：`.\scripts\bootstrap.ps1`

@@ -1,9 +1,11 @@
-//! 生长中的 harness 母本从第 02 课开始写在 `src/`。
-//! 第 01 课按官网只留一份无抽象快照：`examples/01-the-agent-loop.rs`。
-//! 课用 Claude 词表；本仓库 live 走 DeepSeek。
+//! 总体入口：已完成课接到一起（01 循环 + 02 权限门 + 03 Provider）。
+//! 对齐 [byo-coding-agent](https://github.com/betta-tech/byo-coding-agent) 的 `main.go` 接线角色。
+//! 第 03 课：这里换一行就能换供应商；默认 `DeepSeekProvider`。
+//! 单课小 demo 在 `examples/NN-*.rs`。`bash scripts/run.sh` 跑这里。
+
+use build_rust_mini_coding_agent::repl::run_repl;
 
 fn main() {
-    eprintln!("第 01 课入口（冻结快照，不是母本）：");
-    eprintln!("  bash scripts/run.sh");
-    eprintln!("  或 cargo run --example lesson_01");
+    // 总体 = 已完成课的合集。live 接 DeepSeek；循环只认 Provider。
+    run_repl(true);
 }

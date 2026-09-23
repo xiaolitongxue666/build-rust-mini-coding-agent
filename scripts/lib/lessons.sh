@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # 第 00 课：课号登记表。test-lessons.sh / run.sh 只认这里。
 #
-# 官网（byoharness.dev）的策略：
-#   - 只有 examples/minimal 是独立可运行快照（第 01 课，看清循环本质）
-#   - 02–19 的代码片段是「当时的形状」，HEAD 的 src/ 才是生长母本
-#   - 因此不要每课再复制一份完整 agent；测试按课号挂在对应 crate target 上
+# 单课 demo = examples/NN-*.rs。总体 = src/main.rs。
+# 新课：加 example + Cargo.toml 一行 + 这里改 ready / cargo_example:lesson_NN，再并进库。
 # 课上的例子走 Claude；本仓库 ready 课的 live 路径是 DeepSeek。
 #
 # status:
@@ -20,8 +18,8 @@ lesson_catalog() {
   cat <<'EOF'
 00|docs|Introduction|
 01|ready|The agent loop|cargo_example:lesson_01
-02|pending|The permission gate|
-03|pending|The provider interface|
+02|ready|The permission gate|cargo_example:lesson_02
+03|ready|The provider interface|cargo_example:lesson_03
 04|pending|UI polish|
 05|pending|Slash commands|
 06|pending|Conversation state|

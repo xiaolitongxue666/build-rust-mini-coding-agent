@@ -2,7 +2,7 @@
 
 对照：[The agent loop](https://www.byoharness.dev/chapters/01-the-agent-loop.html) · 本课代码：[`examples/01-the-agent-loop.rs`](../../examples/01-the-agent-loop.rs)
 
-HEAD 以后的 `src/` 会拆成 Provider、Registry、TUI。这一课只看循环形状，不要去对 `main.rs`。
+这一课只看循环形状（无权限门）。总体 `src/main.rs` 已并上第 02 课的门。
 
 ## 两层循环
 
@@ -46,7 +46,10 @@ HEAD 以后的 `src/` 会拆成 Provider、Registry、TUI。这一课只看循�
 ## 跑起来
 
 ```bash
-bash scripts/run.sh
+bash scripts/run.sh 01
+cargo run --example lesson_01
 ```
+
+总体（带权限门）：`bash scripts/run.sh`。
 
 在 `>` 后试：`list the files here`、`write a hello.txt with a haiku in it`、`read the file /does/not/exist`。

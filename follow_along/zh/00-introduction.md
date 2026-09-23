@@ -6,4 +6,4 @@
 
 原课用 Claude / Anthropic Messages 讲 harness。本仓库构建的 agent 实际访问 DeepSeek（Chat Completions，默认 `deepseek-flash`）。写代码在 Cursor 里完成，不消耗 DeepSeek。只有 `bash scripts/run.sh`（以及可选的 `RUN_LIVE=1`）才会加载本机密钥去打真实模型。
 
-第 01 课快照：[`examples/01-the-agent-loop.rs`](../../examples/01-the-agent-loop.rs)。官网也只在这一课放独立例子；02 起写进 `src/`。按课测试：`bash scripts/test-lessons.sh`。
+单课 demo 在 `examples/NN-*.rs`。总体在 [`src/main.rs`](../../src/main.rs)（`bash scripts/run.sh`）。第 01 课：[`examples/01-the-agent-loop.rs`](../../examples/01-the-agent-loop.rs)（`run.sh 01`）。第 02 课：[`examples/02-the-permission-gate.rs`](../../examples/02-the-permission-gate.rs)（`run.sh 02`）。总体测试：`bash scripts/test.sh`。按课：`bash scripts/test-lessons.sh`。
