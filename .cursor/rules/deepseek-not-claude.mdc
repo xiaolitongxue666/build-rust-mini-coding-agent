@@ -1,0 +1,13 @@
+---
+description: 课程用 Claude 词表；本仓库 live agent 走 DeepSeek
+alwaysApply: true
+---
+
+# 课是 Claude，跑的是 DeepSeek
+
+[byoharness](https://www.byoharness.dev/index.html) 和 Go 对照课用 Anthropic Claude（Messages、`tool_use`、`stop_reason`）。**本仓库构建的 agent 实际访问 DeepSeek**，不是 Claude，也不是 Anthropic。
+
+- Live：`DEEPSEEK_API_KEY` → `https://api.deepseek.com/chat/completions`，默认模型 `deepseek-flash`。
+- 协议：OpenAI Chat Completions（`tool_calls` / `finish_reason` / `role=tool`）。课上的 Anthropic 词表只写在注释和对课文档里，不要做成默认 live 客户端。
+- 系统提示必须写明身份是 DeepSeek，并带上当前 `LLM_MODEL`。模型看不见请求里的 `model=`，不写就会自称 Claude。
+- 对照课时：循环和分层跟课走；线协议和自称跟 DeepSeek 走。不要为了对齐原文把 live 改回 Claude。

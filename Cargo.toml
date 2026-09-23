@@ -1,0 +1,17 @@
+[package]
+name = "build-rust-mini-coding-agent"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+description = "用 Rust 按 byo-coding-agent 课程重建的学习用 harness；live 走 DeepSeek"
+
+# 官网只冻结第 01 课这一份「无抽象」快照。02 起长在 src/，不要每课再复制一份 agent。
+[[example]]
+name = "lesson_01"
+path = "examples/01-the-agent-loop.rs"
+
+[dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls", "http2", "charset", "system-proxy"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

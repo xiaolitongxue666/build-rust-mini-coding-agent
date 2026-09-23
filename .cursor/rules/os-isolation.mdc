@@ -1,0 +1,12 @@
+---
+description: Windows 与 WSL 兼容但家目录、凭据完全隔离
+alwaysApply: true
+---
+
+# 多 OS 兼容 · 环境独立
+
+脚本要能在 Windows、macOS、Linux、WSL 跑。**不要把另一侧的磁盘当本环境。**
+
+- 密钥、`~/.dsh`、`~/.pi`、rustup 只认当前 `$HOME`。
+- 禁止 WSL 读 `/mnt/c` / Windows 用户目录的 key；禁止 Windows 写 WSL `/home`。
+- 代理 `:7890`（WSL 用宿主机端口）只是网络，不是凭据共用。

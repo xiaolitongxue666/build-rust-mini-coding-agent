@@ -1,0 +1,14 @@
+---
+description: 学习项目：读完一课再实现一课，注释写为什么
+alwaysApply: true
+---
+
+# 按课实现
+
+完整约定见根目录 `AGENTS.md`。这里只强调节奏。
+
+- 这是学习仓库。用户读完第 N 课后，才实现第 N 课。
+- 对照 `follow_along/zh/` 与 byoharness 原章；不要提前引入后续课的抽象。
+- 注释用中文写「为什么」（取舍、失败模式、与 Go 课的差异），关键处标课号。
+- 写代码不读 API key。只有 `scripts/run.sh` / `RUN_LIVE=1` 才打 DeepSeek。
+- 课用 Claude 词表，本仓库 agent 实际访问 DeepSeek；系统提示自称 DeepSeek，不要写成 Claude。
