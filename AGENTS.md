@@ -34,6 +34,8 @@
 
 三个扩展点保持正交：`Provider`、`Tool` + `Registry`、`CompactionStrategy`。新能力优先挂进已有缝，不要另起一套平行抽象。
 
+第 10 课：布局按 [Cargo 包](https://doc.rust-lang.org/cargo/guide/project-layout.html)（`src/lib.rs` + `src/main.rs` + `examples/`），不要套 Go 的 `src/internal/`。`publish = false` + 模块默认私有就是「不是对外 API」。线协议 `chat` 用 `pub(crate)`。`api` 在依赖栈最底。
+
 ## 例子与总体
 
 官网只冻 `examples/minimal`，`main.go` 接线全功能。本仓库：
@@ -50,4 +52,4 @@
 
 改完跑 `bash scripts/check.sh`。要门 + 真实读写时再 `bash scripts/test-flow.sh --live`。按课跑 `bash scripts/test-lessons.sh`。默认单测用 Mock / 纯逻辑，不依赖网络。
 
-管道 / `BYO_PLAIN_INPUT=1` 必须走 `stdin.lines()`：Windows 上 rustyline 即使 stdin 是管道也会 `Ok`，行进不了 editor。TTY 交互仍用 rustyline。Esc / Ctrl+C / ↑↓ 只能手测（`bash scripts/run.sh`）。live 临时文件只放 `.local/`（gitignore），不要写进仓库根。
+管道 / `BYO_PLAIN_INPUT=1` 必须走 `stdin.lines()`：TTY 边框输入（第 08 课）在管道里没有终端。Esc / Ctrl+C / ↑↓ / 边框只能手测（`bash scripts/run.sh`）。live 临时文件只放 `.local/`（gitignore），不要写进仓库根。历史文件写当前 `$HOME/.rustbyo_harness_history`。

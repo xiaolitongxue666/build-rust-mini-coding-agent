@@ -1,4 +1,5 @@
 //! 第 03 课：DeepSeek 适配器。这是 harness 里**唯一**知道 Chat Completions 词表的地方。
+//! 第 10 课：对齐课上「只有一处依赖供应商 SDK」——`crate::chat` 只在这里 import。
 //!
 //! 翻译缝只有两处，和课上 `anthropic.go` 对齐：
 //! - `to_messages` / `to_tools`：通用类型 → 线协议

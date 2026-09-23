@@ -1,5 +1,6 @@
 //! 第 01 课：DeepSeek Chat Completions 的线协议类型。
 //! 第 03 课之后循环不再直接用这些类型；只有 `provider/deepseek.rs` 翻译它们。
+//! 第 10 课：这不是对外 API。`pub(crate)`，对齐课上「只有一处依赖供应商 SDK」。
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

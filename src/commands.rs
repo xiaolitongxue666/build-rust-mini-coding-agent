@@ -8,8 +8,13 @@
 //!
 //! `/exit` 与 Ctrl+C 两次 / Ctrl+D 同一条 `CommandOutcome::Quit`。
 //! `/clear` 清对话框（`messages`），不是清输入框（那是 Ctrl+C 一次）。
+//! 第 07 课：`/compact` 和 `/verbose` 用来当场试策略，不用重启。
+//! 第 10 课：命令碰到所有扩展点。搬进独立包就要把状态全传出去，或做成全局。留在集成层。
 
 use crate::api::{Message, ToolDef};
+use crate::compact::{
+    print_compaction, CompactionStrategy, NoCompaction, SlidingWindow, Summarize,
+};
 use crate::provider::Provider;
 
 pub const KNOWN_MODELS: &[&str] = &["deepseek-flash", "deepseek-chat", "deepseek-reasoner"];
@@ -26,6 +31,8 @@ pub struct CommandCtx<'a> {
     pub llm: &'a mut dyn Provider,
     pub messages: &'a mut Vec<Message>,
     pub tools: &'a [ToolDef],
+    pub compact: &'a dyn CompactionStrategy,
+    pub verbose: &'a mut bool,
 }
 
 struct Command {
@@ -42,6 +49,14 @@ fn registry() -> Vec<(&'static str, Command)> {
                 description: "clear conversation history",
                 usage: "/clear",
                 run: cmd_clear,
+            },
+        ),
+        (
+            "compact",
+            Command {
+                description: "run compaction now (optionally with a specific strategy)",
+                usage: "/compact [sliding|summarize|none]",
+                run: cmd_compact,
             },
         ),
         (
@@ -74,6 +89,14 @@ fn registry() -> Vec<(&'static str, Command)> {
                 description: "list available tools",
                 usage: "/tools",
                 run: cmd_tools,
+            },
+        ),
+        (
+            "verbose",
+            Command {
+                description: "toggle printing of compaction before/after",
+                usage: "/verbose [on|off]",
+                run: cmd_verbose,
             },
         ),
     ]
@@ -140,5 +163,53 @@ fn cmd_tools(_args: &str, ctx: &mut CommandCtx<'_>) -> CommandOutcome {
     for tool in ctx.tools {
         println!("  {:<16} {}", tool.name, tool.description);
     }
+    CommandOutcome::Handled
+}
+
+fn cmd_compact(args: &str, ctx: &mut CommandCtx<'_>) -> CommandOutcome {
+    let sliding = SlidingWindow { keep_last: 6 };
+    let summarize = Summarize {
+        threshold: 0,
+        keep_recent: 4,
+        instructions: String::new(),
+    };
+    let none = NoCompaction;
+    let strategy: &dyn CompactionStrategy = match args.to_ascii_lowercase().as_str() {
+        "" => ctx.compact,
+        "sliding" => &sliding,
+        "summarize" => &summarize,
+        "none" => &none,
+        other => {
+            println!("unknown strategy: {other} (try sliding, summarize, or none)");
+            return CommandOutcome::Handled;
+        }
+    };
+
+    let before = ctx.messages.clone();
+    match strategy.compact(&before, ctx.llm) {
+        Ok(after) => {
+            println!("compacted: {} → {} messages", before.len(), after.len());
+            if *ctx.verbose && before.len() != after.len() {
+                print_compaction(&before, &after);
+            }
+            *ctx.messages = after;
+        }
+        Err(err) => println!("compaction error: {err}"),
+    }
+    CommandOutcome::Handled
+}
+
+fn cmd_verbose(args: &str, ctx: &mut CommandCtx<'_>) -> CommandOutcome {
+    match args.to_ascii_lowercase().as_str() {
+        "" => *ctx.verbose = !*ctx.verbose,
+        "on" | "true" | "yes" => *ctx.verbose = true,
+        "off" | "false" | "no" => *ctx.verbose = false,
+        other => {
+            println!("unknown value: {other} (try on/off)");
+            return CommandOutcome::Handled;
+        }
+    }
+    let state = if *ctx.verbose { "on" } else { "off" };
+    println!("verbose: {state}");
     CommandOutcome::Handled
 }

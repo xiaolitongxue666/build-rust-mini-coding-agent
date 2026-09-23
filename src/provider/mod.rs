@@ -9,6 +9,7 @@
 //! 不必第三份适配器。Anthropic SDK 不进默认路径。
 //!
 //! `Model` / `SetModel` 是给第 05 课 `/model` 的小让步；本课不写斜杠命令。
+//! 第 10 课：接口和实现同目录，不拆 `provider/deepseek/` 子 crate，否则登记又要列一遍。
 
 pub(crate) mod deepseek;
 mod mock;

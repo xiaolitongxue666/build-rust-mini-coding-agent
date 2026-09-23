@@ -1,5 +1,6 @@
 //! 第 02 课：harness 层权限门。审批夹在 `[tool]` 打印和分发之间。
 //! 第 04 课：confirm 走 `PromptRead`，和 REPL 共用一把 editor。Esc 是 Abort，不是退出进程。
+//! 第 09 课：分发交给 Registry；这里只负责打 `[tool]` 和审批。
 
 use crate::tools::dispatch_tool;
 use crate::ui::{LineResult, PromptRead};

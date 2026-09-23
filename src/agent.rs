@@ -2,17 +2,21 @@
 //! 第 03 课：循环只认 `Provider` + 通用 `Message`，不再直接打 Chat Completions。
 //! 第 04 课：`send` 外包 spinner；Esc 取消本回合，截回 turn origin，不退出进程。
 //! 第 06 课：循环在 `messages` 上转，每次 `send` 重读整段。没有 session。
+//! 第 07 课：每轮开头跑 `CompactionStrategy`。压缩在 `send` 外面，避免 Summarize 递归。
+//! 第 10 课：循环在库里，不在 `main.rs`。`spin_until` 是单向依赖 UI；第 11 课才可能成环，本课不拆。
 
 use crate::api::{Block, Message, StopReason, ToolDef};
+use crate::compact::{print_compaction, CompactionStrategy, NoCompaction};
 use crate::gate::{execute_direct, execute_gated_result, GateResult};
 use crate::provider::Provider;
 use crate::ui::{spin_until, PromptRead, Wait};
 
 /// `use_gate`：总体和第 02 课为 true；第 01 课 demo 为 false。
+/// 旧课 demo / 单测走默认 `NoCompaction`。
 pub fn agent_loop<P, R>(
     llm: &mut P,
     tools: &[ToolDef],
-    mut messages: Vec<Message>,
+    messages: Vec<Message>,
     input: &mut R,
     use_gate: bool,
 ) -> Vec<Message>
@@ -20,8 +24,39 @@ where
     P: Provider + Clone + Send + 'static,
     R: PromptRead,
 {
-    let origin = messages.len();
+    agent_loop_with(llm, tools, messages, input, use_gate, &NoCompaction, false)
+}
+
+pub fn agent_loop_with<P, R>(
+    llm: &mut P,
+    tools: &[ToolDef],
+    mut messages: Vec<Message>,
+    input: &mut R,
+    use_gate: bool,
+    compact: &dyn CompactionStrategy,
+    verbose: bool,
+) -> Vec<Message>
+where
+    P: Provider + Clone + Send + 'static,
+    R: PromptRead,
+{
+    let mut origin = messages.len();
     loop {
+        let before_len = messages.len();
+        match compact.compact(&messages, llm) {
+            Ok(next) => {
+                if verbose && next.len() != messages.len() {
+                    print_compaction(&messages, &next);
+                }
+                let dropped = before_len.saturating_sub(next.len());
+                origin = origin.saturating_sub(dropped);
+                messages = next;
+            }
+            Err(err) => {
+                println!("compaction error: {err} (continuing without)");
+            }
+        }
+
         let worker = llm.clone();
         // 第 06 课：这里不往切片里写。循环重读已有条目，不是新开一段。
         let pending = messages.clone();

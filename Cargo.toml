@@ -6,6 +6,8 @@ license = "MIT"
 publish = false
 description = "用 Rust 按 byo-coding-agent 课程重建的学习用 harness；live 走 DeepSeek"
 
+# 第 10 课：按 Cargo 包布局，不按 Go internal/。
+# https://doc.rust-lang.org/cargo/guide/project-layout.html
 # bin = 总体（src/main.rs）。每个 [[example]] = 单课 demo。
 # https://doc.rust-lang.org/cargo/reference/cargo-targets.html#examples
 # test = true：example 里的 #[test] 给 test-lessons.sh 用。
@@ -40,9 +42,28 @@ name = "lesson_06"
 path = "examples/06-conversation-state.rs"
 test = true
 
+[[example]]
+name = "lesson_07"
+path = "examples/07-compaction-strategies.rs"
+test = true
+
+[[example]]
+name = "lesson_08"
+path = "examples/08-better-input.rs"
+test = true
+
+[[example]]
+name = "lesson_09"
+path = "examples/09-plug-and-play-tools.rs"
+test = true
+
+[[example]]
+name = "lesson_10"
+path = "examples/10-project-structure.rs"
+test = true
+
 [dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls", "http2", "charset", "system-proxy"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 crossterm = "0.28"
-rustyline = "15"

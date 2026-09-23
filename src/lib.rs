@@ -1,10 +1,36 @@
-//! 已完成课的共享实现。单课 demo 在 `examples/`，总体 bin 在 `main.rs`。
+//! 已完成课的共享实现。单课 demo 在 `examples/`，总体 bin 在 `src/main.rs`。
 //! 不要在 example 里再抄一份循环。第 03 课起循环只认 `Provider`。
+//!
+//! 第 10 课：课上把 Go 的扁平 `package main` 拆进 `internal/`。
+//! Rust 已经是 [Cargo 包布局](https://doc.rust-lang.org/cargo/guide/project-layout.html)：
+//! `src/lib.rs` 库 + `src/main.rs` bin + `examples/`。模块默认私有，
+//! `publish = false` 就是「不是给外人 import 的库」——不要再套 `src/internal/`。
+//! 模块树按[领域](https://doc.rust-lang.org/book/ch07-02-defining-modules-to-control-scope-and-privacy.html)分，不按文件类型分。
+//!
+//! ```text
+//! src/main.rs          接线（对齐课上 main.go）
+//! src/lib.rs           crate 根
+//! src/api.rs           通用类型，不依赖本 crate 其它模块
+//! src/provider/        Provider + DeepSeek / Mock
+//! src/chat.rs          线协议，仅适配器；crate 内可见
+//! src/tools/           Tool + Registry + 各工具一文件
+//! src/compact/         CompactionStrategy
+//! src/ui/              banner / spinner / 一次性输入
+//! src/agent.rs         内层循环
+//! src/repl.rs          外层 REPL
+//! src/commands.rs      斜杠（碰到所有扩展点，留在集成层）
+//! src/gate.rs          权限门
+//! src/conversation.rs  第 06 课切片辅助
+//! ```
+//!
+//! 依赖方向：`api` 在底。逻辑认 api。UI 可以认逻辑，不要反向。现在没有环。
+//! 第 11 课子 agent 才可能出现 agent ↔ ui ↔ subagent。本课不拆。
 
 pub mod agent;
 pub mod api;
-pub mod chat;
+pub(crate) mod chat;
 pub mod commands;
+pub mod compact;
 pub mod conversation;
 pub mod gate;
 pub mod provider;
@@ -168,14 +194,27 @@ mod tests {
     }
 
     #[test]
+    fn chat_input_down_restores_draft() {
+        let mut state = ui::ChatInputState::new(40, vec!["a".into()]);
+        state.apply(ui::ChatKey::Char('z'));
+        state.apply(ui::ChatKey::Up);
+        state.apply(ui::ChatKey::Down);
+        assert_eq!(state.value(), "z");
+    }
+
+    #[test]
     fn slash_exit_is_quit() {
         let mut llm = MockProvider::text("x");
         let tools = tools::default_tool_defs();
         let mut messages = Vec::new();
+        let compact = compact::NoCompaction;
+        let mut verbose = false;
         let mut ctx = commands::CommandCtx {
             llm: &mut llm,
             messages: &mut messages,
             tools: &tools,
+            compact: &compact,
+            verbose: &mut verbose,
         };
         assert_eq!(
             commands::run_command("/exit", &mut ctx),
@@ -188,10 +227,14 @@ mod tests {
         let mut llm = MockProvider::text("x");
         let tools = tools::default_tool_defs();
         let mut messages = vec![api::Message::user_text("hi")];
+        let compact = compact::NoCompaction;
+        let mut verbose = false;
         let mut ctx = commands::CommandCtx {
             llm: &mut llm,
             messages: &mut messages,
             tools: &tools,
+            compact: &compact,
+            verbose: &mut verbose,
         };
         assert_eq!(
             commands::run_command("/clear", &mut ctx),
@@ -226,5 +269,29 @@ mod tests {
         let dump = messages_json(&messages);
         assert!(dump.contains("tool_use"), "{dump}");
         assert!(dump.contains("toolu_01abc"), "{dump}");
+    }
+
+    #[test]
+    fn render_transcript_includes_block_kinds() {
+        let messages = vec![
+            Message::user_text("hello"),
+            Message::assistant(vec![
+                Block::text("thinking…"),
+                Block::tool_use("t", "bash", r#"{"cmd":"ls"}"#),
+            ]),
+            Message::tool_results(vec![Block::tool_result("t", "file.txt", false)]),
+        ];
+        let out = api::render_transcript(&messages);
+        for want in [
+            "user:",
+            "assistant:",
+            "hello",
+            "called bash",
+            r#"{"cmd":"ls"}"#,
+            "tool result",
+            "file.txt",
+        ] {
+            assert!(out.contains(want), "missing {want:?}\n{out}");
+        }
     }
 }

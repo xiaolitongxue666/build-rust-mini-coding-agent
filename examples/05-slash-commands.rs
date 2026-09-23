@@ -53,10 +53,14 @@ mod tests {
         messages: &mut Vec<Message>,
     ) -> Option<CommandOutcome> {
         let tools = default_tool_defs();
+        let compact = build_rust_mini_coding_agent::compact::NoCompaction;
+        let mut verbose = false;
         let mut ctx = CommandCtx {
             llm,
             messages,
             tools: &tools,
+            compact: &compact,
+            verbose: &mut verbose,
         };
         run_command(line, &mut ctx)
     }

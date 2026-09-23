@@ -49,11 +49,13 @@ cleanup_probe() {
 print_key_checklist() {
   cat <<'EOF'
 
-[Phase C] 键位手测（管道测不到 rustyline）。入口：bash scripts/run.sh
+[Phase C] 键位手测（管道测不到边框输入）。入口：bash scripts/run.sh
   - 宽屏大字标 RUSTBYO；终端缩到 60 列后重启应是单行字标
-  - 等模型时有 spinner；Esc 回到 > ，进程还在
+  - 空闲提示是圆角框 + ❯，不是单独的 >
+  - 等模型时有 spinner；Esc 回到框，进程还在
   - Ctrl+C 一次清空输入框；连续两次或 Ctrl+D 无报错退出
-  - ↑↓ 只出现本会话提交过的行
+  - ↑↓ 翻历史；↓ 越过最新一条应回到按 ↑ 前的草稿
+  - 重启后仍能翻到上次提交（$HOME/.rustbyo_harness_history）
 EOF
 }
 

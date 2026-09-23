@@ -1,4 +1,5 @@
 //! 第 03 课：[The provider interface](https://www.byoharness.dev/chapters/03-the-provider-interface.html)
+//! 第 10 课：本模块在依赖栈最底，不 `use crate::` 其它模块。
 //!
 //! 循环、工具、门只认这套类型。线协议（Anthropic Messages 或 DeepSeek Chat Completions）
 //! 不得漏到 `Provider` 以外。课上的类型是各家 API 的**交集**，不是某一家的 SDK。
@@ -110,13 +111,49 @@ impl Message {
             content,
         }
     }
+
+    /// 第 07 课：干净切分点是「带文本的 user」，不是 tool_result 回包。
+    pub fn has_tool_result(&self) -> bool {
+        self.content
+            .iter()
+            .any(|block| block.ty == BlockType::ToolResult)
+    }
+}
+
+/// 第 07 课：摘要提示和压缩日志用的可读转写。
+pub fn render_transcript(messages: &[Message]) -> String {
+    let mut out = String::new();
+    for message in messages {
+        let role = match message.role {
+            Role::User => "user",
+            Role::Assistant => "assistant",
+        };
+        out.push_str(role);
+        out.push_str(": ");
+        for block in &message.content {
+            match block.ty {
+                BlockType::Text => out.push_str(&block.text),
+                BlockType::ToolUse => {
+                    out.push_str(&format!(
+                        "[called {} with {}]",
+                        block.tool_name, block.tool_input
+                    ));
+                }
+                BlockType::ToolResult => {
+                    out.push_str(&format!("[tool result: {}]", block.tool_result));
+                }
+            }
+            out.push('\n');
+        }
+    }
+    out
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ToolDef {
     pub name: String,
     pub description: String,
-    /// JSON Schema 的 `properties`。字段顺序课上提醒会打乱 prompt cache；第 09 课再排。
+    /// JSON Schema 的 `properties`。第 09 课 `Registry::definitions` 按名字排序，避免打乱 cache。
     pub input_schema: Map<String, Value>,
     pub required: Vec<String>,
 }

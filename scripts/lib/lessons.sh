@@ -23,10 +23,10 @@ lesson_catalog() {
 04|ready|UI polish|cargo_example:lesson_04
 05|ready|Slash commands|cargo_example:lesson_05
 06|ready|Conversation state|cargo_example:lesson_06
-07|pending|Compaction strategies|
-08|pending|Better input|
-09|pending|Plug-and-play tools|
-10|pending|Project structure|
+07|ready|Compaction strategies|cargo_example:lesson_07
+08|ready|Better input|cargo_example:lesson_08
+09|ready|Plug-and-play tools|cargo_example:lesson_09
+10|ready|Project structure|cargo_example:lesson_10
 11|pending|Subagents|
 12|pending|The full TUI|
 13|docs|What's next|

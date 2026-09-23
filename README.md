@@ -8,7 +8,7 @@ Agent 约定：[AGENTS.md](AGENTS.md)。读完一课再实现一课。
 
 ## 当前进度
 
-第 06 课已落地。总体（01–06）：[`src/main.rs`](src/main.rs)。单课 demo：[`examples/01-the-agent-loop.rs`](examples/01-the-agent-loop.rs)、[`examples/02-the-permission-gate.rs`](examples/02-the-permission-gate.rs)、[`examples/03-the-provider-interface.rs`](examples/03-the-provider-interface.rs)、[`examples/04-ui-polish.rs`](examples/04-ui-polish.rs)、[`examples/05-slash-commands.rs`](examples/05-slash-commands.rs)、[`examples/06-conversation-state.rs`](examples/06-conversation-state.rs)。live 默认 `DeepSeekProvider`；单测用 `MockProvider`。
+第 10 课已落地。总体（01–10）：[`src/main.rs`](src/main.rs)。布局按 Cargo（`lib` + `bin` + `examples/`），不套 Go 的 `internal/`。单课 demo：[`examples/01-the-agent-loop.rs`](examples/01-the-agent-loop.rs) … [`examples/10-project-structure.rs`](examples/10-project-structure.rs)。
 
 ## 脚本
 
@@ -32,6 +32,10 @@ bash scripts/run.sh 03            # 第 03 课 demo
 bash scripts/run.sh 04            # 第 04 课 demo
 bash scripts/run.sh 05            # 第 05 课 demo
 bash scripts/run.sh 06            # 第 06 课 demo
+bash scripts/run.sh 07            # 第 07 课 demo
+bash scripts/run.sh 08            # 第 08 课 demo
+bash scripts/run.sh 09            # 第 09 课 demo
+bash scripts/run.sh 10            # 第 10 课 demo
 ```
 
 Windows PowerShell：`.\scripts\bootstrap.ps1`

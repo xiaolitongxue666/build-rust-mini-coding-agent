@@ -2,15 +2,20 @@
 //! 第 02 课：REPL 与 confirm 共用同一条输入。
 //! 第 03 课：变量叫 `llm`，类型是 `Provider`。换这一行就换供应商。
 //! 第 04 课：启动打 banner；读行走 SessionInput。
+//! 第 08 课：TTY 一次性边框输入；管道仍走 stdin.lines()。
 //! 第 06 课：`messages` 切片是对话的唯一真相来源。
+//! 第 07 课：每轮进循环前跑压缩策略；默认 `NoCompaction`。
+//! 第 09 课：工具面来自 `default_registry().definitions()`。
+//! 第 10 课：REPL 是接线层，对齐课上 `main.go` 里那层循环。
 
 use std::io::{self, BufRead, IsTerminal};
 
-use crate::agent::agent_loop;
+use crate::agent::agent_loop_with;
 use crate::api::Message;
 use crate::commands::{run_command, CommandCtx, CommandOutcome};
+use crate::compact::NoCompaction;
 use crate::provider::{DeepSeekProvider, Provider};
-use crate::tools::default_tool_defs;
+use crate::tools::default_registry;
 use crate::ui::{print_banner, PromptRead, ReplLine, SessionInput};
 
 pub fn run_repl(use_gate: bool) {
@@ -29,7 +34,8 @@ pub fn run_repl(use_gate: bool) {
         llm.api_key_len()
     );
 
-    run_repl_with(&mut llm, &default_tool_defs(), use_gate);
+    let defs = default_registry().definitions();
+    run_repl_with(&mut llm, &defs, use_gate);
 }
 
 /// 第 03 课：循环入口只认 trait。单测塞 `MockProvider`，live 塞 `DeepSeekProvider`。
@@ -39,7 +45,7 @@ where
 {
     print_banner();
 
-    // 管道 / BYO_PLAIN_INPUT=1：rustyline 在 Windows 上仍会 Ok，行进不了 editor。
+    // 管道 / BYO_PLAIN_INPUT=1：TTY 边框输入在管道里没有终端，必须走 stdin.lines()。
     if use_plain_input() {
         let stdin = io::stdin();
         let mut lines = stdin.lock().lines();
@@ -69,6 +75,9 @@ where
 {
     // 第 06 课：`var messages []api.Message`。每次 API 调用重发整段，没有服务端会话。
     let mut messages: Vec<Message> = Vec::new();
+    // 第 07 课：换这一行就换压缩策略。
+    let compact = NoCompaction;
+    let mut verbose = false;
     loop {
         match input.read_repl() {
             // /exit、Ctrl+C 两次、Ctrl+D 都走这里，不打 Error。
@@ -78,6 +87,8 @@ where
                     llm,
                     messages: &mut messages,
                     tools,
+                    compact: &compact,
+                    verbose: &mut verbose,
                 };
                 match run_command(&text, &mut ctx) {
                     Some(CommandOutcome::Quit) => return,
@@ -86,7 +97,8 @@ where
                 }
                 // 第 06 课：你提交一行 → {Role: User, Content: [Text]}
                 messages.push(Message::user_text(text));
-                messages = agent_loop(llm, tools, messages, input, use_gate);
+                messages =
+                    agent_loop_with(llm, tools, messages, input, use_gate, &compact, verbose);
             }
         }
     }
