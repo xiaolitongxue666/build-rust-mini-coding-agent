@@ -9,9 +9,10 @@ target
 # cargo mutants
 **/mutants.out*/
 
-# IDE
+# IDE / local tool state
 .idea/
 *.swp
+.local/
 
 # OS
 .DS_Store
