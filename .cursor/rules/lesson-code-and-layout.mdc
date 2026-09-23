@@ -18,12 +18,13 @@ alwaysApply: true
 | 放哪 | 做什么 |
 |---|---|
 | `examples/NN-<slug>.rs` | 本课小 demo：薄入口 + 课程页注释；`[[example]] lesson_NN`，`test = true` |
-| `src/lib.rs` 各模块 | 共享实现（循环、工具、门、`Provider`）只此一份 |
+| `src/lib.rs` 各模块 | 共享实现（循环、工具、门、`Provider`、UI）只此一份 |
 | `src/main.rs` | 总体：接线全部已完成课，对齐官网 `main.go` |
 | `follow_along/zh/NN-*.md` | 对课正文 |
 | `scripts/lib/lessons.sh` | `ready` + `cargo_example:lesson_NN` |
 | `scripts/run.sh` | 无参总体；`run.sh 01` 单课 |
 | `scripts/test.sh` | 总体 `cargo test` |
 | `scripts/test-lessons.sh` | 单课 example 测试 |
+| `scripts/test-flow.sh` | 默认离线 check + 键位清单；`--live` 管道测门和 `.local/live-probe` |
 
 后续课同一模式：先 example，再并进库与 `main.rs`。

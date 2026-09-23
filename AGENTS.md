@@ -18,9 +18,9 @@
 
 ## 密钥
 
-写代码、`scripts/build.sh`、默认 `scripts/test.sh`、`scripts/check.sh` **不读 API key、不打真实模型**。
+写代码、`scripts/build.sh`、默认 `scripts/test.sh`、`scripts/check.sh`、默认 `scripts/test-flow.sh` **不读 API key、不打真实模型**。
 
-只有 `scripts/run.sh` 和 `RUN_LIVE=1 scripts/test.sh` 才加载 DeepSeek 密钥。只读 **当前环境** `$HOME`：环境变量 → `~/.dsh/.credentials.yaml` → `~/.dsh/.env` → `~/.pi/agent/auth.json`。密钥不进仓库。
+只有 `scripts/run.sh`、`scripts/test-flow.sh --live`、`RUN_LIVE=1 scripts/test.sh` 才加载 DeepSeek 密钥。只读 **当前环境** `$HOME`：环境变量 → `~/.dsh/.credentials.yaml` → `~/.dsh/.env` → `~/.pi/agent/auth.json`。密钥不进仓库。
 
 ## 多 OS 兼容，环境独立
 
@@ -42,9 +42,12 @@
 - **总体**：`src/main.rs` 把已完成课接到一起。实现在 `src/lib.rs` 各模块，不在 example 里再抄一份。
 - **跑**：`bash scripts/run.sh` → `cargo run`（总体）；`bash scripts/run.sh 01` → `cargo run --example lesson_01`。
 - **测**：`bash scripts/test.sh` → 总体 `cargo test`；`bash scripts/test-lessons.sh [NN]` → 单课 example。`check.sh` 两路都跑。
+- **完整流程**：`bash scripts/test-flow.sh` = `check.sh` + 键位手测清单；`bash scripts/test-flow.sh --live` 再管道实机测权限门和 `.local/live-probe` 读写。
 
 新课：先加 example 快照，再把该课能力并进库 + `main.rs`。不要提前引入后续课抽象。
 
 ## 验证
 
-改完跑 `bash scripts/check.sh`。按课跑 `bash scripts/test-lessons.sh`。默认单测用 Mock / 纯逻辑，不依赖网络。
+改完跑 `bash scripts/check.sh`。要门 + 真实读写时再 `bash scripts/test-flow.sh --live`。按课跑 `bash scripts/test-lessons.sh`。默认单测用 Mock / 纯逻辑，不依赖网络。
+
+管道 / `BYO_PLAIN_INPUT=1` 必须走 `stdin.lines()`：Windows 上 rustyline 即使 stdin 是管道也会 `Ok`，行进不了 editor。TTY 交互仍用 rustyline。Esc / Ctrl+C / ↑↓ 只能手测（`bash scripts/run.sh`）。live 临时文件只放 `.local/`（gitignore），不要写进仓库根。

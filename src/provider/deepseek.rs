@@ -19,6 +19,7 @@ use crate::chat::{
 };
 use crate::provider::Provider;
 
+#[derive(Clone)]
 pub struct DeepSeekProvider {
     http: Client,
     api_key: String,

@@ -20,7 +20,7 @@ lesson_catalog() {
 01|ready|The agent loop|cargo_example:lesson_01
 02|ready|The permission gate|cargo_example:lesson_02
 03|ready|The provider interface|cargo_example:lesson_03
-04|pending|UI polish|
+04|ready|UI polish|cargo_example:lesson_04
 05|pending|Slash commands|
 06|pending|Conversation state|
 07|pending|Compaction strategies|

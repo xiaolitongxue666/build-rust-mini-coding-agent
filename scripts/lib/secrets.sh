@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 只给 scripts/run.sh 和 RUN_LIVE=1 的 test.sh 用。
+# 只给 scripts/run.sh、scripts/test-flow.sh --live、RUN_LIVE=1 的 test.sh 用。
 # 构建 / 默认单测不要 source 本文件。
 #
 # 每个 OS / 每个 WSL distro 各自一套凭据，互不翻对方磁盘。

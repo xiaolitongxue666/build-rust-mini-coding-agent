@@ -111,7 +111,7 @@ impl Message {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ToolDef {
     pub name: String,
     pub description: String,

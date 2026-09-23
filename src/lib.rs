@@ -8,6 +8,7 @@ pub mod gate;
 pub mod provider;
 pub mod repl;
 pub mod tools;
+pub mod ui;
 
 #[cfg(test)]
 mod tests {
@@ -139,5 +140,27 @@ mod tests {
         let mut llm = MockProvider::text("x");
         llm.set_model("other".to_string());
         assert_eq!(llm.model(), "other");
+    }
+
+    #[test]
+    fn banner_wide_uses_block_art() {
+        assert_eq!(ui::BIG_BANNER_WIDTH, 66);
+        let text = ui::banner_text(80);
+        assert!(text.contains('█'), "{text}");
+        assert!(text.contains("DeepSeek"), "{text}");
+    }
+
+    #[test]
+    fn banner_narrow_uses_wordmark() {
+        let text = ui::banner_text(40);
+        assert!(text.contains("RUSTBYO"), "{text}");
+        assert!(!text.contains('█'), "{text}");
+    }
+
+    #[test]
+    fn ctrl_c_once_clears_twice_quits() {
+        assert_eq!(ui::ctrl_c_action(1), ui::CtrlCAction::Clear);
+        assert_eq!(ui::ctrl_c_action(2), ui::CtrlCAction::Quit);
+        assert_eq!(ui::ctrl_c_action(3), ui::CtrlCAction::Quit);
     }
 }

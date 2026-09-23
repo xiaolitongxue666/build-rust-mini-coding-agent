@@ -18,7 +18,7 @@ pub use mock::MockProvider;
 
 use crate::api::{Message, Response, ToolDef};
 
-pub trait Provider {
+pub trait Provider: Send {
     fn send(&self, messages: &[Message], tools: &[ToolDef]) -> Result<Response, String>;
     fn model(&self) -> &str;
     fn set_model(&mut self, name: String);

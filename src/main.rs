@@ -1,4 +1,4 @@
-//! 总体入口：已完成课接到一起（01 循环 + 02 权限门 + 03 Provider）。
+//! 总体入口：已完成课接到一起（01 循环 + 02 权限门 + 03 Provider + 04 UI）。
 //! 对齐 [byo-coding-agent](https://github.com/betta-tech/byo-coding-agent) 的 `main.go` 接线角色。
 //! 第 03 课：这里换一行就能换供应商；默认 `DeepSeekProvider`。
 //! 单课小 demo 在 `examples/NN-*.rs`。`bash scripts/run.sh` 跑这里。
