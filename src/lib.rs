@@ -4,6 +4,7 @@
 pub mod agent;
 pub mod api;
 pub mod chat;
+pub mod commands;
 pub mod gate;
 pub mod provider;
 pub mod repl;
@@ -162,5 +163,38 @@ mod tests {
         assert_eq!(ui::ctrl_c_action(1), ui::CtrlCAction::Clear);
         assert_eq!(ui::ctrl_c_action(2), ui::CtrlCAction::Quit);
         assert_eq!(ui::ctrl_c_action(3), ui::CtrlCAction::Quit);
+    }
+
+    #[test]
+    fn slash_exit_is_quit() {
+        let mut llm = MockProvider::text("x");
+        let tools = tools::default_tool_defs();
+        let mut messages = Vec::new();
+        let mut ctx = commands::CommandCtx {
+            llm: &mut llm,
+            messages: &mut messages,
+            tools: &tools,
+        };
+        assert_eq!(
+            commands::run_command("/exit", &mut ctx),
+            Some(commands::CommandOutcome::Quit)
+        );
+    }
+
+    #[test]
+    fn slash_clear_empties_messages() {
+        let mut llm = MockProvider::text("x");
+        let tools = tools::default_tool_defs();
+        let mut messages = vec![api::Message::user_text("hi")];
+        let mut ctx = commands::CommandCtx {
+            llm: &mut llm,
+            messages: &mut messages,
+            tools: &tools,
+        };
+        assert_eq!(
+            commands::run_command("/clear", &mut ctx),
+            Some(commands::CommandOutcome::Handled)
+        );
+        assert!(messages.is_empty());
     }
 }

@@ -7,6 +7,7 @@ use std::io::{self, BufRead, IsTerminal};
 
 use crate::agent::agent_loop;
 use crate::api::Message;
+use crate::commands::{run_command, CommandCtx, CommandOutcome};
 use crate::provider::{DeepSeekProvider, Provider};
 use crate::tools::default_tool_defs;
 use crate::ui::{print_banner, PromptRead, ReplLine, SessionInput};
@@ -68,8 +69,19 @@ where
     let mut messages: Vec<Message> = Vec::new();
     loop {
         match input.read_repl() {
+            // /exit、Ctrl+C 两次、Ctrl+D 都走这里，不打 Error。
             ReplLine::Quit => return,
             ReplLine::Text(text) => {
+                let mut ctx = CommandCtx {
+                    llm,
+                    messages: &mut messages,
+                    tools,
+                };
+                match run_command(&text, &mut ctx) {
+                    Some(CommandOutcome::Quit) => return,
+                    Some(CommandOutcome::Handled) => continue,
+                    None => {}
+                }
                 messages.push(Message::user_text(text));
                 messages = agent_loop(llm, tools, messages, input, use_gate);
             }

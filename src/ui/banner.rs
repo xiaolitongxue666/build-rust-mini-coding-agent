@@ -37,7 +37,7 @@ pub fn banner_text(width: usize) -> String {
     };
     if width >= BIG_BANNER_MIN_WIDTH {
         format!(
-            "{BOLD_CYAN}{BIG_BANNER}{RESET}\n{DIM} rust mini coding agent · DeepSeek{RESET}\n{DIM} type a message · esc cancels a turn · ctrl-c twice to exit{RESET}\n\n"
+            "{BOLD_CYAN}{BIG_BANNER}{RESET}\n{DIM} rust mini coding agent · DeepSeek{RESET}\n{DIM} type a message · /help · esc cancels a turn · /exit or ctrl-c twice to leave{RESET}\n\n"
         )
     } else {
         format!(

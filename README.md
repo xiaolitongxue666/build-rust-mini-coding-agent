@@ -8,7 +8,7 @@ Agent 约定：[AGENTS.md](AGENTS.md)。读完一课再实现一课。
 
 ## 当前进度
 
-第 04 课已落地。总体（01 循环 + 02 权限门 + 03 Provider + 04 UI）：[`src/main.rs`](src/main.rs)。单课 demo：[`examples/01-the-agent-loop.rs`](examples/01-the-agent-loop.rs)、[`examples/02-the-permission-gate.rs`](examples/02-the-permission-gate.rs)、[`examples/03-the-provider-interface.rs`](examples/03-the-provider-interface.rs)、[`examples/04-ui-polish.rs`](examples/04-ui-polish.rs)。live 默认 `DeepSeekProvider`；单测用 `MockProvider`。
+第 05 课已落地。总体（01–05）：[`src/main.rs`](src/main.rs)。单课 demo：[`examples/01-the-agent-loop.rs`](examples/01-the-agent-loop.rs)、[`examples/02-the-permission-gate.rs`](examples/02-the-permission-gate.rs)、[`examples/03-the-provider-interface.rs`](examples/03-the-provider-interface.rs)、[`examples/04-ui-polish.rs`](examples/04-ui-polish.rs)、[`examples/05-slash-commands.rs`](examples/05-slash-commands.rs)。live 默认 `DeepSeekProvider`；单测用 `MockProvider`。
 
 ## 脚本
 
@@ -30,6 +30,7 @@ bash scripts/run.sh 01            # 第 01 课 demo
 bash scripts/run.sh 02            # 第 02 课 demo
 bash scripts/run.sh 03            # 第 03 课 demo
 bash scripts/run.sh 04            # 第 04 课 demo
+bash scripts/run.sh 05            # 第 05 课 demo
 ```
 
 Windows PowerShell：`.\scripts\bootstrap.ps1`

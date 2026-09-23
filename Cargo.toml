@@ -30,6 +30,11 @@ name = "lesson_04"
 path = "examples/04-ui-polish.rs"
 test = true
 
+[[example]]
+name = "lesson_05"
+path = "examples/05-slash-commands.rs"
+test = true
+
 [dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls", "http2", "charset", "system-proxy"] }
 serde = { version = "1", features = ["derive"] }
