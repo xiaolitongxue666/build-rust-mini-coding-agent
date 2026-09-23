@@ -22,7 +22,7 @@ lesson_catalog() {
 03|ready|The provider interface|cargo_example:lesson_03
 04|ready|UI polish|cargo_example:lesson_04
 05|ready|Slash commands|cargo_example:lesson_05
-06|pending|Conversation state|
+06|ready|Conversation state|cargo_example:lesson_06
 07|pending|Compaction strategies|
 08|pending|Better input|
 09|pending|Plug-and-play tools|

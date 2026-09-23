@@ -6,6 +6,7 @@
 //!
 //! Anthropic 的 system 是请求上的 `System` 字段。DeepSeek / OpenAI 没有那一栏，
 //! 适配器在这里插第一条 `role: system`。循环看不见这个差异。
+//! 第 06 课：system 每次请求另带，不进通用 `messages` 切片。
 
 use reqwest::blocking::Client;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};

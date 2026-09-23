@@ -96,7 +96,8 @@ pub fn run_command(line: &str, ctx: &mut CommandCtx<'_>) -> Option<CommandOutcom
     Some((cmd.run)(args, ctx))
 }
 
-/// 第 05 课：`messages.clear()` 就是清对话。模型无状态。
+/// 第 05 课 / 第 06 课：`messages.clear()` 就是清对话。
+/// 模型没有记忆；下一轮 `send` 只带 Provider 上的 system。
 pub fn clear_conversation(messages: &mut Vec<Message>) {
     messages.clear();
 }

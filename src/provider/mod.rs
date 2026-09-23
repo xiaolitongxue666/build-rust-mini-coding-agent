@@ -19,6 +19,7 @@ pub use mock::MockProvider;
 use crate::api::{Message, Response, ToolDef};
 
 pub trait Provider: Send {
+    /// 第 06 课：每次传入到目前为止的整段切片。没有 session id。
     fn send(&self, messages: &[Message], tools: &[ToolDef]) -> Result<Response, String>;
     fn model(&self) -> &str;
     fn set_model(&mut self, name: String);

@@ -2,6 +2,7 @@
 //! 第 02 课：REPL 与 confirm 共用同一条输入。
 //! 第 03 课：变量叫 `llm`，类型是 `Provider`。换这一行就换供应商。
 //! 第 04 课：启动打 banner；读行走 SessionInput。
+//! 第 06 课：`messages` 切片是对话的唯一真相来源。
 
 use std::io::{self, BufRead, IsTerminal};
 
@@ -66,6 +67,7 @@ where
     P: Provider + Clone + Send + 'static,
     R: PromptRead + ReplSource,
 {
+    // 第 06 课：`var messages []api.Message`。每次 API 调用重发整段，没有服务端会话。
     let mut messages: Vec<Message> = Vec::new();
     loop {
         match input.read_repl() {
@@ -82,6 +84,7 @@ where
                     Some(CommandOutcome::Handled) => continue,
                     None => {}
                 }
+                // 第 06 课：你提交一行 → {Role: User, Content: [Text]}
                 messages.push(Message::user_text(text));
                 messages = agent_loop(llm, tools, messages, input, use_gate);
             }

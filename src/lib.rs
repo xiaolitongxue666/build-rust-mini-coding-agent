@@ -5,6 +5,7 @@ pub mod agent;
 pub mod api;
 pub mod chat;
 pub mod commands;
+pub mod conversation;
 pub mod gate;
 pub mod provider;
 pub mod repl;
@@ -18,6 +19,7 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use crate::api::{Block, Message, Role, StopReason};
+    use crate::conversation::{messages_json, tool_pairs_intact};
     use crate::provider::deepseek::{from_stop_reason, to_messages, to_tools};
     use crate::provider::{MockProvider, Provider};
 
@@ -196,5 +198,33 @@ mod tests {
             Some(commands::CommandOutcome::Handled)
         );
         assert!(messages.is_empty());
+    }
+
+    // 第 06 课：system 在 Provider / 线协议上，不在通用切片里。
+    #[test]
+    fn conversation_system_stays_off_slice() {
+        let messages = vec![Message::user_text("hi")];
+        let wire = to_messages("you are deepseek", &messages);
+        assert_eq!(messages.len(), 1);
+        assert_eq!(wire[0].role, "system");
+        assert_eq!(wire[1].role, "user");
+        assert_eq!(wire.len(), 2);
+
+        let empty = to_messages("you are deepseek", &[]);
+        assert_eq!(empty.len(), 1);
+        assert_eq!(empty[0].role, "system");
+    }
+
+    #[test]
+    fn conversation_dump_and_pairing() {
+        let messages = vec![
+            Message::user_text("hi"),
+            Message::assistant(vec![Block::tool_use("toolu_01abc", "bash", "{}")]),
+            Message::tool_results(vec![Block::tool_result("toolu_01abc", "ok", false)]),
+        ];
+        assert!(tool_pairs_intact(&messages));
+        let dump = messages_json(&messages);
+        assert!(dump.contains("tool_use"), "{dump}");
+        assert!(dump.contains("toolu_01abc"), "{dump}");
     }
 }

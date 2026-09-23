@@ -3,8 +3,9 @@
 //! 循环、工具、门只认这套类型。线协议（Anthropic Messages 或 DeepSeek Chat Completions）
 //! 不得漏到 `Provider` 以外。课上的类型是各家 API 的**交集**，不是某一家的 SDK。
 //!
-//! 不带 `Role::System`：system 挂在具体 Provider 上（Anthropic 的 `System` 字段，
-//! DeepSeek 在适配器里插成第一条 `role: system`）。不带 Usage —— 那是更后的课。
+//! 不带 `Role::System`：第 06 课写明 system 不在 `messages` 里，挂在具体 Provider 上
+//!（Anthropic 的 `System` 字段，DeepSeek 在适配器里插成第一条 `role: system`）。
+//! 不带 Usage —— 那是更后的课。
 
 use serde_json::{Map, Value};
 

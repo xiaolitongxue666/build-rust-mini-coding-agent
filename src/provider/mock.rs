@@ -1,7 +1,7 @@
 //! 第 03 课：固定回复的 Provider。测循环、门、分发，不打真实模型、不读密钥。
 
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::api::{Block, Message, Response, StopReason, ToolDef};
 use crate::provider::Provider;
@@ -11,6 +11,8 @@ pub struct MockProvider {
     model: String,
     responses: Vec<Response>,
     next: Arc<AtomicUsize>,
+    /// 第 06 课：记下每次 `send` 收到的整段切片。模型没有会话，客户端每次重发。
+    sent: Arc<Mutex<Vec<Vec<Message>>>>,
 }
 
 impl MockProvider {
@@ -22,6 +24,7 @@ impl MockProvider {
                 stop_reason: StopReason::EndTurn,
             }],
             next: Arc::new(AtomicUsize::new(0)),
+            sent: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -30,12 +33,21 @@ impl MockProvider {
             model: "mock".to_string(),
             responses,
             next: Arc::new(AtomicUsize::new(0)),
+            sent: Arc::new(Mutex::new(Vec::new())),
         }
+    }
+
+    pub fn sent(&self) -> Vec<Vec<Message>> {
+        self.sent.lock().expect("mock sent lock").clone()
     }
 }
 
 impl Provider for MockProvider {
-    fn send(&self, _messages: &[Message], _tools: &[ToolDef]) -> Result<Response, String> {
+    fn send(&self, messages: &[Message], _tools: &[ToolDef]) -> Result<Response, String> {
+        self.sent
+            .lock()
+            .expect("mock sent lock")
+            .push(messages.to_vec());
         if self.responses.is_empty() {
             return Err("mock has no responses".to_string());
         }
