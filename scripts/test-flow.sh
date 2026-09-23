@@ -49,10 +49,12 @@ cleanup_probe() {
 print_key_checklist() {
   cat <<'EOF'
 
-[Phase C] 键位手测（管道测不到边框输入）。入口：bash scripts/run.sh
-  - 宽屏大字标 RUSTBYO；终端缩到 60 列后重启应是单行字标
-  - 空闲提示是圆角框 + ❯，不是单独的 >
-  - 等模型时有 spinner；Esc 回到框，进程还在
+[Phase C] 键位手测（管道测不到整屏 TUI）。入口：bash scripts/run.sh
+  - 备用屏：启动盖住原来的终端；Ctrl+D 退回原样
+  - 上面是可翻视口，下面是圆角框 + ❯
+  - 等模型时输入框上有转圈；委托时应出现 · research
+  - PgUp 停自动跟随；End 再跟到底
+  - 审批是黄框，按一下 y/n，不用回车
   - Ctrl+C 一次清空输入框；连续两次或 Ctrl+D 无报错退出
   - ↑↓ 翻历史；↓ 越过最新一条应回到按 ↑ 前的草稿
   - 重启后仍能翻到上次提交（$HOME/.rustbyo_harness_history）

@@ -24,4 +24,9 @@ pub trait Provider: Send {
     fn send(&self, messages: &[Message], tools: &[ToolDef]) -> Result<Response, String>;
     fn model(&self) -> &str;
     fn set_model(&mut self, name: String);
+    /// 第 11 课：system 在 Agent 上，子 agent 和根不是同一段。默认空，适配器自己带。
+    fn system(&self) -> &str {
+        ""
+    }
+    fn set_system(&mut self, _prompt: String) {}
 }

@@ -9,14 +9,15 @@
 //! 第 10 课：这就是课上 `internal/tool/`——接口和每个工具同目录，不套 `src/internal/`。
 //!
 //! `Definitions` 必须按名字排序：HashMap 迭代顺序随机，打乱字节会毁掉以后的 prompt cache。
-//! 本课不写 `Subset`（第 11 课子 agent），不写 `web_fetch`（课上练习）。
+//! 第 11 课：`Subset` 给子 agent 一份只读工具面。这是策展，不是沙箱。
+//! 不写 `web_fetch`（课上练习）。`DelegateTool` 不进本模块，以免 `tools → subagent → agent → tools`。
 
 mod bash;
 mod read_file;
 mod write_file;
 
 use std::collections::HashMap;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use serde_json::{json, Map, Value};
 
@@ -28,7 +29,7 @@ pub trait Tool: Send + Sync {
 }
 
 pub struct Registry {
-    tools: HashMap<String, Box<dyn Tool>>,
+    tools: HashMap<String, Arc<dyn Tool>>,
 }
 
 impl Registry {
@@ -39,8 +40,27 @@ impl Registry {
     }
 
     pub fn register(&mut self, tool: impl Tool + 'static) {
+        self.register_arc(Arc::new(tool));
+    }
+
+    pub fn register_arc(&mut self, tool: Arc<dyn Tool>) {
         let name = tool.definition().name;
-        self.tools.insert(name, Box::new(tool));
+        self.tools.insert(name, tool);
+    }
+
+    /// 第 11 课：`Subset` 从已有登记里挑名字，组一份新 Registry。
+    pub fn get(&self, name: &str) -> Option<Arc<dyn Tool>> {
+        self.tools.get(name).cloned()
+    }
+
+    pub fn subset(&self, names: &[&str]) -> Registry {
+        let mut out = Registry::new();
+        for name in names {
+            if let Some(tool) = self.get(name) {
+                out.register_arc(tool);
+            }
+        }
+        out
     }
 
     /// 第 09 课：先按名字排序，再给模型。顺序不稳会打乱 prompt cache。
@@ -65,6 +85,14 @@ impl Registry {
 impl Default for Registry {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Clone for Registry {
+    fn clone(&self) -> Self {
+        Self {
+            tools: self.tools.clone(),
+        }
     }
 }
 
@@ -154,6 +182,16 @@ mod tests {
     #[test]
     fn unknown_tool_is_error_result() {
         let (text, is_err) = Registry::new().execute("missing", "{}");
+        assert!(is_err);
+        assert!(text.contains("unknown tool"), "{text}");
+    }
+
+    #[test]
+    fn subset_is_curation_not_sandbox() {
+        let subset = default_registry().subset(&["read_file"]);
+        let names: Vec<String> = subset.definitions().into_iter().map(|d| d.name).collect();
+        assert_eq!(names, vec!["read_file".to_string()]);
+        let (text, is_err) = subset.execute("bash", r#"{"command":"pwd"}"#);
         assert!(is_err);
         assert!(text.contains("unknown tool"), "{text}");
     }

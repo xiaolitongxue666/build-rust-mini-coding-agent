@@ -36,6 +36,10 @@
 
 第 10 课：布局按 [Cargo 包](https://doc.rust-lang.org/cargo/guide/project-layout.html)（`src/lib.rs` + `src/main.rs` + `examples/`），不要套 Go 的 `src/internal/`。`publish = false` + 模块默认私有就是「不是对外 API」。线协议 `chat` 用 `pub(crate)`。`api` 在依赖栈最底。
 
+第 11 课：`DelegateTool` 不进 `tools/`，以免 `tools → subagent → agent → tools`。子 agent 在接线层登记，不 `OnceLock`。
+
+第 12 课：TTY 整屏程序占界面。循环不 import `ui`。`println!` 进管子。审批走通道。管道 / `BYO_PLAIN_INPUT=1` 仍是 `stdin.lines()`。
+
 ## 例子与总体
 
 官网只冻 `examples/minimal`，`main.go` 接线全功能。本仓库：
@@ -52,4 +56,4 @@
 
 改完跑 `bash scripts/check.sh`。要门 + 真实读写时再 `bash scripts/test-flow.sh --live`。按课跑 `bash scripts/test-lessons.sh`。默认单测用 Mock / 纯逻辑，不依赖网络。
 
-管道 / `BYO_PLAIN_INPUT=1` 必须走 `stdin.lines()`：TTY 边框输入（第 08 课）在管道里没有终端。Esc / Ctrl+C / ↑↓ / 边框只能手测（`bash scripts/run.sh`）。live 临时文件只放 `.local/`（gitignore），不要写进仓库根。历史文件写当前 `$HOME/.rustbyo_harness_history`。
+管道 / `BYO_PLAIN_INPUT=1` 必须走 `stdin.lines()`：第 12 课整屏 TUI 在管道里没有终端。PgUp / 黄框审批 / 备用屏只能手测（`bash scripts/run.sh`）。live 临时文件只放 `.local/`（gitignore），不要写进仓库根。历史文件写当前 `$HOME/.rustbyo_harness_history`。

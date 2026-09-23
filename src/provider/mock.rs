@@ -9,6 +9,7 @@ use crate::provider::Provider;
 #[derive(Clone)]
 pub struct MockProvider {
     model: String,
+    system: String,
     responses: Vec<Response>,
     next: Arc<AtomicUsize>,
     /// 第 06 课：记下每次 `send` 收到的整段切片。模型没有会话，客户端每次重发。
@@ -19,6 +20,7 @@ impl MockProvider {
     pub fn text(body: impl Into<String>) -> Self {
         Self {
             model: "mock".to_string(),
+            system: String::new(),
             responses: vec![Response {
                 content: vec![Block::text(body)],
                 stop_reason: StopReason::EndTurn,
@@ -31,6 +33,7 @@ impl MockProvider {
     pub fn with_responses(responses: Vec<Response>) -> Self {
         Self {
             model: "mock".to_string(),
+            system: String::new(),
             responses,
             next: Arc::new(AtomicUsize::new(0)),
             sent: Arc::new(Mutex::new(Vec::new())),
@@ -62,5 +65,13 @@ impl Provider for MockProvider {
 
     fn set_model(&mut self, name: String) {
         self.model = name;
+    }
+
+    fn system(&self) -> &str {
+        &self.system
+    }
+
+    fn set_system(&mut self, prompt: String) {
+        self.system = prompt;
     }
 }

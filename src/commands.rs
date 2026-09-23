@@ -10,12 +10,16 @@
 //! `/clear` 清对话框（`messages`），不是清输入框（那是 Ctrl+C 一次）。
 //! 第 07 课：`/compact` 和 `/verbose` 用来当场试策略，不用重启。
 //! 第 10 课：命令碰到所有扩展点。搬进独立包就要把状态全传出去，或做成全局。留在集成层。
+//! 第 11 课：`/subagents` 看登记和 `Active()`。REPL 堵住时飞行中的是空的。
+
+use std::sync::OnceLock;
 
 use crate::api::{Message, ToolDef};
 use crate::compact::{
     print_compaction, CompactionStrategy, NoCompaction, SlidingWindow, Summarize,
 };
 use crate::provider::Provider;
+use crate::subagent;
 
 pub const KNOWN_MODELS: &[&str] = &["deepseek-flash", "deepseek-chat", "deepseek-reasoner"];
 
@@ -33,6 +37,13 @@ pub struct CommandCtx<'a> {
     pub tools: &'a [ToolDef],
     pub compact: &'a dyn CompactionStrategy,
     pub verbose: &'a mut bool,
+    pub subagents: &'a subagent::Registry,
+}
+
+/// 旧课单测没有子 agent。
+pub fn no_subagents() -> &'static subagent::Registry {
+    static EMPTY: OnceLock<subagent::Registry> = OnceLock::new();
+    EMPTY.get_or_init(subagent::Registry::new)
 }
 
 struct Command {
@@ -81,6 +92,14 @@ fn registry() -> Vec<(&'static str, Command)> {
                 description: "show or change the model",
                 usage: "/model [name]",
                 run: cmd_model,
+            },
+        ),
+        (
+            "subagents",
+            Command {
+                description: "list subagents (registered and currently running)",
+                usage: "/subagents",
+                run: cmd_subagents,
             },
         ),
         (
@@ -162,6 +181,34 @@ fn cmd_model(args: &str, ctx: &mut CommandCtx<'_>) -> CommandOutcome {
 fn cmd_tools(_args: &str, ctx: &mut CommandCtx<'_>) -> CommandOutcome {
     for tool in ctx.tools {
         println!("  {:<16} {}", tool.name, tool.description);
+    }
+    CommandOutcome::Handled
+}
+
+fn cmd_subagents(_args: &str, ctx: &mut CommandCtx<'_>) -> CommandOutcome {
+    let all = ctx.subagents.all();
+    if all.is_empty() {
+        println!("no subagents registered");
+    } else {
+        println!("registered subagents:");
+        for sa in all {
+            println!("  {:<16} {}", sa.name(), sa.description());
+        }
+    }
+    let running = subagent::active();
+    if running.is_empty() {
+        println!("currently running: (none)");
+    } else {
+        println!("currently running:");
+        let mut names: Vec<_> = running.into_iter().collect();
+        names.sort_by(|a, b| a.0.cmp(&b.0));
+        for (name, n) in names {
+            if n == 1 {
+                println!("  {name}");
+            } else {
+                println!("  {name} ×{n}");
+            }
+        }
     }
     CommandOutcome::Handled
 }

@@ -27,8 +27,8 @@ lesson_catalog() {
 08|ready|Better input|cargo_example:lesson_08
 09|ready|Plug-and-play tools|cargo_example:lesson_09
 10|ready|Project structure|cargo_example:lesson_10
-11|pending|Subagents|
-12|pending|The full TUI|
+11|ready|Subagents|cargo_example:lesson_11
+12|ready|The full TUI|cargo_example:lesson_12
 13|docs|What's next|
 14|pending|Adding MCP support|
 15|pending|Project context with AGENTS.md|

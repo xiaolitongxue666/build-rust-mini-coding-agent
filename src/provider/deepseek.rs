@@ -123,6 +123,14 @@ impl Provider for DeepSeekProvider {
         self.model = name;
         self.system = system_prompt(&self.model);
     }
+
+    fn system(&self) -> &str {
+        &self.system
+    }
+
+    fn set_system(&mut self, prompt: String) {
+        self.system = prompt;
+    }
 }
 
 pub(crate) fn to_messages(system: &str, messages: &[Message]) -> Vec<ChatMessage> {

@@ -62,8 +62,21 @@ name = "lesson_10"
 path = "examples/10-project-structure.rs"
 test = true
 
+[[example]]
+name = "lesson_11"
+path = "examples/11-subagents.rs"
+test = true
+
+[[example]]
+name = "lesson_12"
+path = "examples/12-full-tui.rs"
+test = true
+
 [dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls", "http2", "charset", "system-proxy"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 crossterm = "0.28"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

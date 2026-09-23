@@ -8,7 +8,7 @@ Agent 约定：[AGENTS.md](AGENTS.md)。读完一课再实现一课。
 
 ## 当前进度
 
-第 10 课已落地。总体（01–10）：[`src/main.rs`](src/main.rs)。布局按 Cargo（`lib` + `bin` + `examples/`），不套 Go 的 `internal/`。单课 demo：[`examples/01-the-agent-loop.rs`](examples/01-the-agent-loop.rs) … [`examples/10-project-structure.rs`](examples/10-project-structure.rs)。
+第 12 课已落地。总体（01–12）：[`src/main.rs`](src/main.rs)。TTY 是整屏程序（视口 + 输入 + 审批 + 转圈）；管道 / `BYO_PLAIN_INPUT=1` 仍走 `stdin.lines()`。单课 demo：[`examples/01-the-agent-loop.rs`](examples/01-the-agent-loop.rs) … [`examples/12-full-tui.rs`](examples/12-full-tui.rs)。
 
 ## 脚本
 
@@ -36,6 +36,8 @@ bash scripts/run.sh 07            # 第 07 课 demo
 bash scripts/run.sh 08            # 第 08 课 demo
 bash scripts/run.sh 09            # 第 09 课 demo
 bash scripts/run.sh 10            # 第 10 课 demo
+bash scripts/run.sh 11            # 第 11 课 demo
+bash scripts/run.sh 12            # 第 12 课 demo
 ```
 
 Windows PowerShell：`.\scripts\bootstrap.ps1`

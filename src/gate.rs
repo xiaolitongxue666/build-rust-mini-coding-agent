@@ -1,9 +1,39 @@
 //! 第 02 课：harness 层权限门。审批夹在 `[tool]` 打印和分发之间。
 //! 第 04 课：confirm 走 `PromptRead`，和 REPL 共用一把 editor。Esc 是 Abort，不是退出进程。
 //! 第 09 课：分发交给 Registry；这里只负责打 `[tool]` 和审批。
+//! 第 11 课：根/子 Agent 自己打 `{LogPrefix}[tool]` 并 `tools.execute`。这里留给旧课 demo。
+//! 第 12 课：`PromptRead` 放这里，循环不再 import `ui`，避免 `agent → ui → subagent → agent`。
+
+use std::io::{self, Write};
 
 use crate::tools::dispatch_tool;
-use crate::ui::{LineResult, PromptRead};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LineResult {
+    Line(String),
+    End,
+    Abort,
+}
+
+pub trait PromptRead {
+    fn read_line(&mut self, prompt: &str) -> LineResult;
+}
+
+impl<I> PromptRead for I
+where
+    I: Iterator<Item = io::Result<String>>,
+{
+    fn read_line(&mut self, prompt: &str) -> LineResult {
+        if !prompt.is_empty() {
+            print!("{prompt}");
+            let _ = io::stdout().flush();
+        }
+        match self.next() {
+            Some(Ok(line)) => LineResult::Line(line),
+            _ => LineResult::End,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Decision {

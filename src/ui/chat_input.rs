@@ -66,6 +66,17 @@ impl ChatInputState {
         &self.value
     }
 
+    pub fn set_width(&mut self, width: usize) {
+        self.width = width.max(24);
+    }
+
+    pub fn clear(&mut self) {
+        self.value.clear();
+        self.cursor = 0;
+        self.hist_idx = -1;
+        self.buffer_text.clear();
+    }
+
     pub fn apply(&mut self, key: ChatKey) -> ChatOutcome {
         match key {
             ChatKey::Enter => ChatOutcome::Submit(self.value.clone()),

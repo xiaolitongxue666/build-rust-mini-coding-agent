@@ -15,16 +15,19 @@
 //! src/chat.rs          线协议，仅适配器；crate 内可见
 //! src/tools/           Tool + Registry + 各工具一文件
 //! src/compact/         CompactionStrategy
-//! src/ui/              banner / spinner / 一次性输入
-//! src/agent.rs         内层循环
+//! src/ui/              banner / spinner / 一次性输入 / 第 12 课整屏
+//! src/agent.rs         内层循环 / 第 11 课 Agent 结构体
 //! src/repl.rs          外层 REPL
 //! src/commands.rs      斜杠（碰到所有扩展点，留在集成层）
+//! src/delegate.rs      DelegateTool（不进 tools/，避免环）
+//! src/subagent/        Subagent + Research
 //! src/gate.rs          权限门
 //! src/conversation.rs  第 06 课切片辅助
 //! ```
 //!
-//! 依赖方向：`api` 在底。逻辑认 api。UI 可以认逻辑，不要反向。现在没有环。
-//! 第 11 课子 agent 才可能出现 agent ↔ ui ↔ subagent。本课不拆。
+//! 依赖方向：`api` 在底。逻辑认 api。UI 可以认逻辑，不要反向。
+//! 第 11 课：`tools` 不认 `subagent`。`agent` 不认 `subagent`。胶水在 `delegate`。
+//! 第 12 课：`ui` 读 `Active()`。`agent` 不再 import `ui`，没有环。
 
 pub mod agent;
 pub mod api;
@@ -32,9 +35,11 @@ pub(crate) mod chat;
 pub mod commands;
 pub mod compact;
 pub mod conversation;
+pub mod delegate;
 pub mod gate;
 pub mod provider;
 pub mod repl;
+pub mod subagent;
 pub mod tools;
 pub mod ui;
 
@@ -215,6 +220,7 @@ mod tests {
             tools: &tools,
             compact: &compact,
             verbose: &mut verbose,
+            subagents: commands::no_subagents(),
         };
         assert_eq!(
             commands::run_command("/exit", &mut ctx),
@@ -235,6 +241,7 @@ mod tests {
             tools: &tools,
             compact: &compact,
             verbose: &mut verbose,
+            subagents: commands::no_subagents(),
         };
         assert_eq!(
             commands::run_command("/clear", &mut ctx),

@@ -2,24 +2,28 @@
 //! 第 02 课：REPL 与 confirm 共用同一条输入。
 //! 第 03 课：变量叫 `llm`，类型是 `Provider`。换这一行就换供应商。
 //! 第 04 课：启动打 banner；读行走 SessionInput。
-//! 第 08 课：TTY 一次性边框输入；管道仍走 stdin.lines()。
+//! 第 08 课：一次性边框输入。第 12 课：TTY 整屏程序；管道仍走 stdin.lines()。
 //! 第 06 课：`messages` 切片是对话的唯一真相来源。
 //! 第 07 课：每轮进循环前跑压缩策略；默认 `NoCompaction`。
 //! 第 09 课：工具面来自 `default_registry().definitions()`。
 //! 第 10 课：REPL 是接线层，对齐课上 `main.go` 里那层循环。
+//! 第 11 课：这里 `register_subagents`，再 new 根 `Agent`。DelegateTool 不进 tools 模块。
+//! 第 12 课：TTY 走 `run_tui`；`BYO_PLAIN_INPUT` / 非 TTY 仍是同步 REPL。
 
 use std::io::{self, BufRead, IsTerminal};
 
-use crate::agent::agent_loop_with;
-use crate::api::Message;
+use crate::agent::Agent;
+use crate::chat::system_prompt;
 use crate::commands::{run_command, CommandCtx, CommandOutcome};
 use crate::compact::NoCompaction;
+use crate::delegate::register_subagents;
 use crate::provider::{DeepSeekProvider, Provider};
+use crate::subagent;
 use crate::tools::default_registry;
-use crate::ui::{print_banner, PromptRead, ReplLine, SessionInput};
+use crate::ui::{print_banner, run_tui, PromptRead, ReplLine};
 
 pub fn run_repl(use_gate: bool) {
-    let mut llm = match DeepSeekProvider::from_env() {
+    let llm = match DeepSeekProvider::from_env() {
         Ok(p) => p,
         Err(err) => {
             eprintln!("{err}");
@@ -34,8 +38,20 @@ pub fn run_repl(use_gate: bool) {
         llm.api_key_len()
     );
 
-    let defs = default_registry().definitions();
-    run_repl_with(&mut llm, &defs, use_gate);
+    let mut tools = default_registry().clone();
+    let subagents = register_subagents(&llm, &mut tools);
+    let system = system_prompt(llm.model());
+    let mut agent = Agent::new(llm, system, tools);
+    agent.use_gate = use_gate;
+    agent.max_turns = 50;
+    if use_plain_input() {
+        run_plain(&mut agent, &subagents);
+        return;
+    }
+    if let Err(err) = run_tui(agent, subagents) {
+        eprintln!("{err}");
+        std::process::exit(1);
+    }
 }
 
 /// 第 03 课：循环入口只认 trait。单测塞 `MockProvider`，live 塞 `DeepSeekProvider`。
@@ -43,24 +59,15 @@ pub fn run_repl_with<P>(llm: &mut P, tools: &[crate::api::ToolDef], use_gate: bo
 where
     P: Provider + Clone + Send + 'static,
 {
-    print_banner();
-
-    // 管道 / BYO_PLAIN_INPUT=1：TTY 边框输入在管道里没有终端，必须走 stdin.lines()。
-    if use_plain_input() {
-        let stdin = io::stdin();
-        let mut lines = stdin.lock().lines();
-        run_session(llm, tools, use_gate, &mut lines);
-        return;
-    }
-
-    match SessionInput::new() {
-        Ok(mut session) => run_session(llm, tools, use_gate, &mut session),
-        Err(_) => {
-            let stdin = io::stdin();
-            let mut lines = stdin.lock().lines();
-            run_session(llm, tools, use_gate, &mut lines);
-        }
-    }
+    let registry = if tools.is_empty() {
+        crate::tools::Registry::new()
+    } else {
+        default_registry().clone()
+    };
+    let mut agent = Agent::new(llm.clone(), String::new(), registry);
+    agent.use_gate = use_gate;
+    let empty = subagent::Registry::new();
+    run_plain(&mut agent, &empty);
 }
 
 fn use_plain_input() -> bool {
@@ -68,13 +75,21 @@ fn use_plain_input() -> bool {
         || !io::stdin().is_terminal()
 }
 
-fn run_session<P, R>(llm: &mut P, tools: &[crate::api::ToolDef], use_gate: bool, input: &mut R)
+fn run_plain<P>(agent: &mut Agent<P>, subagents: &subagent::Registry)
+where
+    P: Provider + Clone + Send + 'static,
+{
+    print_banner();
+    let stdin = io::stdin();
+    let mut lines = stdin.lock().lines();
+    run_turns(agent, subagents, &mut lines);
+}
+
+fn run_turns<P, R>(agent: &mut Agent<P>, subagents: &subagent::Registry, input: &mut R)
 where
     P: Provider + Clone + Send + 'static,
     R: PromptRead + ReplSource,
 {
-    // 第 06 课：`var messages []api.Message`。每次 API 调用重发整段，没有服务端会话。
-    let mut messages: Vec<Message> = Vec::new();
     // 第 07 课：换这一行就换压缩策略。
     let compact = NoCompaction;
     let mut verbose = false;
@@ -83,36 +98,33 @@ where
             // /exit、Ctrl+C 两次、Ctrl+D 都走这里，不打 Error。
             ReplLine::Quit => return,
             ReplLine::Text(text) => {
+                agent.verbose = verbose;
+                let defs = agent.tools.definitions();
                 let mut ctx = CommandCtx {
-                    llm,
-                    messages: &mut messages,
-                    tools,
+                    llm: &mut agent.llm,
+                    messages: &mut agent.messages,
+                    tools: &defs,
                     compact: &compact,
                     verbose: &mut verbose,
+                    subagents,
                 };
                 match run_command(&text, &mut ctx) {
                     Some(CommandOutcome::Quit) => return,
                     Some(CommandOutcome::Handled) => continue,
                     None => {}
                 }
-                // 第 06 课：你提交一行 → {Role: User, Content: [Text]}
-                messages.push(Message::user_text(text));
-                messages =
-                    agent_loop_with(llm, tools, messages, input, use_gate, &compact, verbose);
+                // 第 06 课 / 第 11 课：`Send` 自己 append user。
+                if let Err(err) = agent.send_with(text, input) {
+                    println!("{err}");
+                }
             }
         }
     }
 }
 
-/// 空闲提示行。SessionInput 自己处理 Ctrl+C；迭代器回退把下一行当提交。
+/// 管道把下一行当提交。
 trait ReplSource {
     fn read_repl(&mut self) -> ReplLine;
-}
-
-impl ReplSource for SessionInput {
-    fn read_repl(&mut self) -> ReplLine {
-        SessionInput::read_repl(self)
-    }
 }
 
 impl<I> ReplSource for I

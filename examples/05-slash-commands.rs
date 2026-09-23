@@ -61,6 +61,7 @@ mod tests {
             tools: &tools,
             compact: &compact,
             verbose: &mut verbose,
+            subagents: build_rust_mini_coding_agent::commands::no_subagents(),
         };
         run_command(line, &mut ctx)
     }

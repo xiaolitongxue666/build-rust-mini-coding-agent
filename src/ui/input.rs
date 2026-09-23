@@ -8,6 +8,8 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifier
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType};
 use crossterm::{cursor, queue};
 
+use crate::gate::{LineResult, PromptRead};
+
 use super::banner::term_width;
 use super::chat_input::{
     append_history, load_history, render_box, ChatInputState, ChatKey, ChatOutcome,
@@ -25,33 +27,6 @@ pub fn ctrl_c_action(streak: u8) -> CtrlCAction {
         CtrlCAction::Quit
     } else {
         CtrlCAction::Clear
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum LineResult {
-    Line(String),
-    End,
-    Abort,
-}
-
-pub trait PromptRead {
-    fn read_line(&mut self, prompt: &str) -> LineResult;
-}
-
-impl<I> PromptRead for I
-where
-    I: Iterator<Item = io::Result<String>>,
-{
-    fn read_line(&mut self, prompt: &str) -> LineResult {
-        if !prompt.is_empty() {
-            print!("{prompt}");
-            let _ = io::stdout().flush();
-        }
-        match self.next() {
-            Some(Ok(line)) => LineResult::Line(line),
-            _ => LineResult::End,
-        }
     }
 }
 
