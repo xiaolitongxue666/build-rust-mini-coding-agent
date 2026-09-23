@@ -6,7 +6,9 @@
 //! 压缩只在 `agent_loop` 每轮开头调用，**不要**放进 `Provider::send`。
 //! Summarize 会再调一次 `send`；套进去会无限递归。
 //!
-//! 本课不写 TokenBudget（课上练习），不写 prompt cache。
+//! 本课不写 TokenBudget（课上练习）。
+//! 第 17 课：压缩只改 `messages`，不改 system。DeepSeek 的磁盘缓存认完整前缀单元；
+//! 砍掉开头的历史，旧单元就对不上。system 不在这个切片里。
 //! 第 10 课：对应课上 `internal/compact/`。策略文件同目录，不拆子 crate。
 
 mod logging;

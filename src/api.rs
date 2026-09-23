@@ -6,7 +6,7 @@
 //!
 //! 不带 `Role::System`：第 06 课写明 system 不在 `messages` 里，挂在具体 Provider 上
 //!（Anthropic 的 `System` 字段，DeepSeek 在适配器里插成第一条 `role: system`）。
-//! 不带 Usage —— 那是更后的课。
+//! 第 16 课：`Usage` 是各家「token」的交集。DeepSeek 填 cache miss / hit / output，cache 写入保持 0。
 
 use serde_json::{Map, Value};
 
@@ -165,8 +165,38 @@ pub enum StopReason {
     Other,
 }
 
+/// 第 16 课：一次响应的用量。任何有 token 概念的后端都能填；没有就留 0。
+/// `input_tokens` 是 cache miss。`cache_read_tokens` 是 cache hit。
+/// DeepSeek 没有 Anthropic 那种 cache 写入价，`cache_creation_tokens` 保持 0。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Usage {
+    pub input_tokens: u64,
+    pub output_tokens: u64,
+    pub cache_creation_tokens: u64,
+    pub cache_read_tokens: u64,
+}
+
+impl Usage {
+    pub fn plus(self, other: Usage) -> Usage {
+        Usage {
+            input_tokens: self.input_tokens + other.input_tokens,
+            output_tokens: self.output_tokens + other.output_tokens,
+            cache_creation_tokens: self.cache_creation_tokens + other.cache_creation_tokens,
+            cache_read_tokens: self.cache_read_tokens + other.cache_read_tokens,
+        }
+    }
+
+    pub fn is_zero(self) -> bool {
+        self.input_tokens == 0
+            && self.output_tokens == 0
+            && self.cache_creation_tokens == 0
+            && self.cache_read_tokens == 0
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Response {
     pub content: Vec<Block>,
     pub stop_reason: StopReason,
+    pub usage: Usage,
 }

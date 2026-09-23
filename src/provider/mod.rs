@@ -10,6 +10,9 @@
 //!
 //! `Model` / `SetModel` 是给第 05 课 `/model` 的小让步；本课不写斜杠命令。
 //! 第 10 课：接口和实现同目录，不拆 `provider/deepseek/` 子 crate，否则登记又要列一遍。
+//! 第 16 课：`TotalUsage` 不上接口。Rust 不能对 `dyn Provider` 做课上那种类型断言，
+//! 所以这里用默认方法 `token_report`：Mock 返回 `None`，DeepSeek 才覆盖。
+//! TUI 要的是闭包，因为 provider 在工作线程上。
 
 pub(crate) mod deepseek;
 mod mock;
@@ -18,6 +21,7 @@ pub use deepseek::DeepSeekProvider;
 pub use mock::MockProvider;
 
 use crate::api::{Message, Response, ToolDef};
+use crate::pricing::TokenReport;
 
 pub trait Provider: Send {
     /// 第 06 课：每次传入到目前为止的整段切片。没有 session id。
@@ -29,4 +33,8 @@ pub trait Provider: Send {
         ""
     }
     fn set_system(&mut self, _prompt: String) {}
+    /// 第 16 课：没有 token 概念的后端保持 `None`，不要报 ¥0。
+    fn token_report(&self) -> Option<TokenReport> {
+        None
+    }
 }

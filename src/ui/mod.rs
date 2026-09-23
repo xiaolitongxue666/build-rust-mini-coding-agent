@@ -16,7 +16,7 @@ pub use chat_input::{
     append_history_to, load_history_from, render_box, ChatInputState, ChatKey, ChatOutcome,
 };
 pub use input::{ctrl_c_action, CtrlCAction, ReplLine, SessionInput};
-pub use program::{run_tui, Harness, HarnessCmd, HarnessEvent, ModelState};
+pub use program::{run_tui, Harness, HarnessCmd, HarnessEvent, ModelState, UsageLine};
 pub use spinner::{spin_until, stdout_is_tty, Wait};
 
 /// 第 11 课：委托头尾用暗色，和根 agent 的 `[tool]` 分开。

@@ -7,6 +7,7 @@
 //! 把子 agent 和根分开。
 //! 第 12 课：循环不再 import `ui`。转圈交给整屏状态行；`println!` 进管子。
 //! 审批是 `Confirm` 回调（通道 + TUI），不是在 Update 里堵死。
+//! 第 18 课：回调多一个 detail。只有本地 `write_file` 把统一 diff 放进去。
 
 use std::sync::Arc;
 
@@ -16,7 +17,8 @@ use crate::gate::{confirm_decision, Decision, PromptRead};
 use crate::provider::Provider;
 use crate::tools::Registry;
 
-pub type ConfirmFn = Arc<dyn Fn(&str) -> bool + Send + Sync>;
+/// 第 18 课：第二个参数是长文。`write_file` 放 diff，其它工具传空串。
+pub type ConfirmFn = Arc<dyn Fn(&str, &str) -> bool + Send + Sync>;
 
 /// 第 11 课：一份对话的全部状态。根 REPL 一份，每次 `delegate_*` 再 new 一份。
 pub struct Agent<P: Provider> {
@@ -41,6 +43,7 @@ pub struct Agent<P: Provider> {
 
 impl<P: Provider> Agent<P> {
     pub fn new(mut llm: P, system: String, tools: Registry) -> Self {
+        // 第 15 课：非空时只换行为半边。适配器把已经焊上的 AGENTS.md 再拼回去。
         if !system.is_empty() {
             llm.set_system(system.clone());
         }
@@ -83,9 +86,9 @@ impl<P: Provider + Clone + Send + 'static> Agent<P> {
         self.messages.push(Message::user_text(prompt.into()));
         let confirm = self.confirm.clone();
         let use_gate = self.use_gate;
-        self.loop_body(|prompt| match &confirm {
+        self.loop_body(|prompt, detail| match &confirm {
             Some(f) => {
-                if f(prompt) {
+                if f(prompt, detail) {
                     Decision::Yes
                 } else {
                     Decision::No
@@ -103,7 +106,12 @@ impl<P: Provider + Clone + Send + 'static> Agent<P> {
         input: &mut R,
     ) -> Result<String, String> {
         self.messages.push(Message::user_text(prompt.into()));
-        self.loop_body(|prompt| confirm_decision(prompt, input))
+        self.loop_body(|prompt, detail| {
+            if !detail.is_empty() {
+                println!("{detail}");
+            }
+            confirm_decision(prompt, input)
+        })
     }
 
     pub fn loop_turns_with<R: PromptRead>(
@@ -112,10 +120,15 @@ impl<P: Provider + Clone + Send + 'static> Agent<P> {
         compact: &dyn CompactionStrategy,
         verbose: bool,
     ) -> Result<String, String> {
-        self.loop_body_with(compact, verbose, |prompt| confirm_decision(prompt, input))
+        self.loop_body_with(compact, verbose, |prompt, detail| {
+            if !detail.is_empty() {
+                println!("{detail}");
+            }
+            confirm_decision(prompt, input)
+        })
     }
 
-    fn loop_body(&mut self, approve: impl FnMut(&str) -> Decision) -> Result<String, String> {
+    fn loop_body(&mut self, approve: impl FnMut(&str, &str) -> Decision) -> Result<String, String> {
         let compact = std::mem::replace(&mut self.compact, Box::new(NoCompaction));
         let verbose = self.verbose;
         let result = self.loop_body_with(compact.as_ref(), verbose, approve);
@@ -127,12 +140,13 @@ impl<P: Provider + Clone + Send + 'static> Agent<P> {
         &mut self,
         compact: &dyn CompactionStrategy,
         verbose: bool,
-        mut approve: impl FnMut(&str) -> Decision,
+        mut approve: impl FnMut(&str, &str) -> Decision,
     ) -> Result<String, String> {
         let mut origin = self.messages.len();
         let mut final_text = String::new();
         for _turn in 0..self.max_turns {
             let before_len = self.messages.len();
+            // 第 17 课：只替换 messages。system 留在 provider 上，不跟这次压缩一起改。
             match compact.compact(&self.messages, &self.llm) {
                 Ok(next) => {
                     if verbose && next.len() != self.messages.len() {
@@ -211,11 +225,13 @@ impl<P: Provider + Clone + Send + 'static> Agent<P> {
         &self,
         name: &str,
         raw_input: &str,
-        approve: &mut impl FnMut(&str) -> Decision,
+        approve: &mut impl FnMut(&str, &str) -> Decision,
     ) -> ToolOutcome {
         println!("{}[tool] {name} {raw_input}", self.log_prefix);
         if self.use_gate {
-            match approve("approve?") {
+            // 第 18 课：只在落盘前问。detail 不写进 tool_result，模型看不到 diff。
+            let (prompt, detail) = crate::write_diff::write_approval(name, raw_input);
+            match approve(&prompt, &detail) {
                 Decision::Abort => return ToolOutcome::Aborted,
                 Decision::No => {
                     return ToolOutcome::Done("user denied this tool call".to_string(), true);
@@ -223,6 +239,7 @@ impl<P: Provider + Clone + Send + 'static> Agent<P> {
                 Decision::Yes => {}
             }
         }
+        // 第 14 课：本地工具和 MCP 工具走同一条 approve。门不看调用是不是子进程。
         let (result, is_err) = self.tools.execute(name, raw_input);
         ToolOutcome::Done(result, is_err)
     }

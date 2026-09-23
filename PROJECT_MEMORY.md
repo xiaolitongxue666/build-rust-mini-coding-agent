@@ -1,7 +1,7 @@
 # Project Memory (Compact)
 
 1) **课是 Claude，跑的是 DeepSeek** — 原章用 Anthropic Messages / Claude 词表。live 走 https://api.deepseek.com/chat/completions，默认 deepseek-flash。tool_use 只留注释和对课，不要做成默认 live 客户端。
-2) **实现节奏** — 用户读完第 N 课才实现第 N 课。第 13 课是收束：follow_along/zh/13-whats-next.md，课表 docs，没有 example。不写课上练习（web_fetch / 流式 / PermissionPolicy / CodeReview / TokenBudget）和 14–19，除非点名。不要提前写 HEAD 里的 Usage / 计价 / debug / shine / MCP / token 栏 / ratatui。Mock 和 TUI ↑↓ 历史本仓库已有。
+2) **实现节奏** — 用户读完第 N 课才实现第 N 课。第 13 课是收束：follow_along/zh/13-whats-next.md，课表 docs，没有 example。不写课上练习（web_fetch / 流式 / PermissionPolicy / CodeReview / TokenBudget）和 19，除非点名。不要提前写 debug / shine / ratatui。Mock 和 TUI ↑↓ 历史本仓库已有。第 14–18 课已落地。
 3) **密钥只在 live** — build / 默认 test / check / 默认 test-flow 不读 key。只有 run.sh、test-flow.sh --live、RUN_LIVE=1 才加载。顺序：环境变量 → <home>/.dsh/.credentials.yaml → <home>/.dsh/.env → <home>/.pi/agent/auth.json。不进仓库。
 4) **多 OS、环境独立** — Windows / macOS / Linux / WSL 能跑，状态不共享。WSL 不读 /mnt/c；Windows 不写 WSL /home。MSYS HOME 常是 /home/<user>，detect_os=windows 时再认 /c/Users/$(id -un)。set -u 下 local 先赋 raw=""。
 5) **系统提示必须写身份** — 模型看不见 model=。system 挂在 Provider / Agent 上，写明 DeepSeek 和当前模型；适配器插第一条 role: system。只读调查应走 delegate_research（祈使句，不要软提示）。
@@ -16,3 +16,9 @@
 14) **第 11 课子 agent** — Agent 结构体；Research 只有 read_file 子集（策展不是沙箱）。子 agent 要 Provider，接线时登记，不 OnceLock。Confirm=nil 自动过；Quiet + LogPrefix 区分根/子。
 15) **第 12 课整屏** — TTY 一个 crossterm 程序（不上 ratatui/Bubble Tea）。循环在后台线程；println! 进管子；审批走通道。agent 不再 import ui。管道 / BYO_PLAIN_INPUT=1 必须 stdin.lines()。
 16) **test-flow** — 默认 check.sh + 键位清单。--live 先 probe-llm，再管道测门和 .local/live-probe。拒绝正文只回给模型，断言看文件。git-smart-commit 在 agent 子 shell 要 --yes。
+17) **第 14 课 MCP** — 同一套 Registry。SDK 是 rmcp，不手写 JSON-RPC，async 只在 src/mcp 里 block_on。mcp.json 相对 cwd，gitignore；缺文件不打日志。失败的 server 跳过。名字加前缀，RPC 用原名。$ref schema 跳过该工具。登记在 repl，赶在子 agent 和 stdout 管子之前。退出 close。不自动批准，不热重载。默认测试用 src/bin/mcp-stdio-fixture，不拉 uvx。
+18) **第 15 课 AGENTS.md** — 启动读一次 cwd 的 AGENTS.md，拼进 system，不当用户消息。缺文件空串。不往上找，不热重载，不写 /context。behavior 与 project_context 分开；/model 和 Research 的 set_system 只换行为半边。Agent::new 传入行为半边，避免贴两遍。
+19) **第 16 课用量** — 每次响应按当时北京时间（固定 UTC+8，不读本机时区）入高峰或空闲桶，人民币累加，不按「现在」重算。Flash 空闲 ¥0.02/¥1/¥4 每百万，高峰翻倍，等于官方美元 × 20/3。chat/reasoner 按 Flash。未知模型显示「未知模型」。token_report 默认 None。状态栏闭包与 clone 共享 Arc 账本。cache 行为 0 不打印。2026 放假只认国办发明电〔2025〕7号。
+20) **第 17 课缓存** — DeepSeek 磁盘缓存默认开，不发 cache_control。前缀单元必须完整匹配。system 是第一条且不含时间；工具按名字排序；压缩只改 messages。hit/miss 优先，否则用 prompt_tokens_details.cached_tokens。不造 cache write 加价。官方说明：https://api-docs.deepseek.com/guides/kv_cache
+21) **第 18 课 diff** — 只认本地 write_file。落盘前读当前文件，统一 diff，上下文 3 行。新文件用 /dev/null，相同字节是 (no changes)。一次 y/n。MCP 写工具仍是 approve?。diff 不进 tool_result。TUI 用 ANSI 上色，不上 Chroma。快照不刷新。
+22) **根 README** — 中文课程首页。Mermaid 画 run_repl 一圈，ASCII 画内层循环，课号链到 follow_along/zh/。不画第 19 课、流式、记忆。脚本与密钥隔离留在「怎么跑」。不改 agent-config 的 README。

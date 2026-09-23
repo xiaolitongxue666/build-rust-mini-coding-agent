@@ -11,6 +11,10 @@
 //! Update / apply 里不准 `println!`，否则字绕回自己。
 //!
 //! 底栏永远留 5 行，状态切换时布局不抖。
+//! 第 16 课：空闲时这一行是用量。数字从闭包读，不发消息。
+//! 工作线程拥有 provider；`View` 每帧读一次账本快照。
+//! 第 18 课：`write_file` 的 diff 铺满视口，黄框仍是一次 y/n。课上用 Chroma 上色；
+//! 这里继续 crossterm，`+` 绿、`-` 红、`@@` 暗。
 
 use std::io::{BufRead, BufReader, Write};
 use std::sync::mpsc::{self, Sender, SyncSender};
@@ -40,6 +44,8 @@ use crate::ui::{banner_text, term_width, CtrlCAction};
 const BOTTOM_LINES: u16 = 5;
 const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 const YELLOW: &str = "\x1b[33m";
+const GREEN: &str = "\x1b[32m";
+const RED: &str = "\x1b[31m";
 const RESET: &str = "\x1b[0m";
 const DIM: &str = "\x1b[2m";
 
@@ -58,7 +64,7 @@ pub enum HarnessEvent {
     End,
     Resize { width: u16, height: u16 },
     Append(String),
-    Approval { prompt: String },
+    Approval { prompt: String, detail: String },
     AgentDone { err: Option<String> },
     Tick,
     CtrlC,
@@ -72,17 +78,23 @@ pub enum HarnessCmd {
     Reply(bool),
 }
 
+/// 第 16 课：TUI 不认识 provider。REPL 把账本收成这一行字。
+pub type UsageLine = Arc<dyn Fn() -> String + Send + Sync>;
+
 pub struct Harness {
     pub state: ModelState,
     pub output: String,
     pub follow_bottom: bool,
     pub scroll: usize,
     pub approval_prompt: String,
+    pub approval_detail: String,
+    approval_scroll: usize,
     pub input: ChatInputState,
     pub spinner_frame: usize,
     pub width: u16,
     pub height: u16,
     ctrl_c_streak: u8,
+    usage_line: UsageLine,
 }
 
 impl Harness {
@@ -95,12 +107,19 @@ impl Harness {
             follow_bottom: true,
             scroll: 0,
             approval_prompt: String::new(),
+            approval_detail: String::new(),
+            approval_scroll: 0,
             input,
             spinner_frame: 0,
             width,
             height,
             ctrl_c_streak: 0,
+            usage_line: Arc::new(String::new),
         }
+    }
+
+    pub fn set_usage_line(&mut self, usage_line: UsageLine) {
+        self.usage_line = usage_line;
     }
 
     pub fn at_bottom(&self) -> bool {
@@ -125,9 +144,11 @@ impl Harness {
                 }
                 HarnessCmd::None
             }
-            HarnessEvent::Approval { prompt } => {
+            HarnessEvent::Approval { prompt, detail } => {
                 self.state = ModelState::AwaitingApproval;
                 self.approval_prompt = prompt;
+                self.approval_detail = detail;
+                self.approval_scroll = 0;
                 HarnessCmd::None
             }
             HarnessEvent::AgentDone { err } => {
@@ -147,21 +168,35 @@ impl Harness {
                 HarnessCmd::None
             }
             HarnessEvent::PageUp => {
+                if self.scroll_detail(-1) {
+                    return HarnessCmd::None;
+                }
                 self.scroll = self.scroll.saturating_add(1).min(self.max_scroll());
                 self.follow_bottom = self.at_bottom();
                 HarnessCmd::None
             }
             HarnessEvent::PageDown => {
+                if self.scroll_detail(1) {
+                    return HarnessCmd::None;
+                }
                 self.scroll = self.scroll.saturating_sub(1);
                 self.follow_bottom = self.at_bottom();
                 HarnessCmd::None
             }
             HarnessEvent::Home => {
+                if self.showing_diff() {
+                    self.approval_scroll = 0;
+                    return HarnessCmd::None;
+                }
                 self.scroll = self.max_scroll();
                 self.follow_bottom = false;
                 HarnessCmd::None
             }
             HarnessEvent::End => {
+                if self.showing_diff() {
+                    self.approval_scroll = self.detail_max_scroll();
+                    return HarnessCmd::None;
+                }
                 self.scroll = 0;
                 self.follow_bottom = true;
                 HarnessCmd::None
@@ -183,16 +218,24 @@ impl Harness {
     fn apply_key(&mut self, key: ChatKey) -> HarnessCmd {
         if self.state == ModelState::AwaitingApproval {
             return match key {
+                ChatKey::Up if self.showing_diff() => {
+                    self.approval_scroll = self.approval_scroll.saturating_sub(1);
+                    HarnessCmd::None
+                }
+                ChatKey::Down if self.showing_diff() => {
+                    self.approval_scroll = (self.approval_scroll + 1).min(self.detail_max_scroll());
+                    HarnessCmd::None
+                }
                 ChatKey::Char('y' | 'Y') => {
-                    self.state = ModelState::Running;
+                    self.finish_approval();
                     HarnessCmd::Reply(true)
                 }
                 ChatKey::Esc => {
-                    self.state = ModelState::Running;
+                    self.finish_approval();
                     HarnessCmd::Reply(false)
                 }
                 ChatKey::Char('n' | 'N') | ChatKey::Enter => {
-                    self.state = ModelState::Running;
+                    self.finish_approval();
                     HarnessCmd::Reply(false)
                 }
                 ChatKey::CtrlD => HarnessCmd::Quit,
@@ -233,6 +276,38 @@ impl Harness {
         }
     }
 
+    fn showing_diff(&self) -> bool {
+        self.state == ModelState::AwaitingApproval && !self.approval_detail.is_empty()
+    }
+
+    fn detail_max_scroll(&self) -> usize {
+        self.approval_detail
+            .lines()
+            .count()
+            .saturating_sub(self.viewport_rows().max(1))
+    }
+
+    fn scroll_detail(&mut self, delta: i32) -> bool {
+        if !self.showing_diff() {
+            return false;
+        }
+        if delta < 0 {
+            self.approval_scroll = self
+                .approval_scroll
+                .saturating_sub(delta.unsigned_abs() as usize);
+        } else {
+            self.approval_scroll =
+                (self.approval_scroll + delta as usize).min(self.detail_max_scroll());
+        }
+        true
+    }
+
+    fn finish_approval(&mut self) {
+        self.state = ModelState::Running;
+        self.approval_detail.clear();
+        self.approval_scroll = 0;
+    }
+
     fn max_scroll(&self) -> usize {
         let vis = self.viewport_rows();
         self.output_lines().len().saturating_sub(vis)
@@ -250,41 +325,61 @@ impl Harness {
     }
 
     pub fn status_line(&self, active: &[(String, usize)]) -> String {
-        if self.state != ModelState::Running {
+        if self.state == ModelState::Running {
+            let frame = SPINNER_FRAMES[self.spinner_frame];
+            let mut line = format!("{frame} thinking...");
+            for (name, n) in active {
+                if *n == 0 {
+                    continue;
+                }
+                if *n == 1 {
+                    line.push_str(&format!(" · {name}"));
+                } else {
+                    line.push_str(&format!(" · {name} ×{n}"));
+                }
+            }
+            return pad_line(&line, self.width as usize);
+        }
+        let usage = (self.usage_line)();
+        if usage.is_empty() {
             return " ".repeat(self.width.max(1) as usize);
         }
-        let frame = SPINNER_FRAMES[self.spinner_frame];
-        let mut line = format!("{frame} thinking...");
-        for (name, n) in active {
-            if *n == 0 {
-                continue;
-            }
-            if *n == 1 {
-                line.push_str(&format!(" · {name}"));
-            } else {
-                line.push_str(&format!(" · {name} ×{n}"));
-            }
-        }
-        pad_line(&line, self.width as usize)
+        pad_line(&usage, self.width as usize)
     }
 
     pub fn view(&self, active: &[(String, usize)]) -> String {
         let mut rows = Vec::new();
         let vis = self.viewport_rows().max(1);
-        let lines = self.output_lines();
-        let max_scroll = lines.len().saturating_sub(vis);
-        let scroll = self.scroll.min(max_scroll);
-        let end = lines.len().saturating_sub(scroll);
-        let start = end.saturating_sub(vis);
-        for line in lines.get(start..end).unwrap_or(&[]) {
-            rows.push(pad_line(line, self.width as usize));
-        }
-        while rows.len() < vis {
-            rows.insert(0, " ".repeat(self.width as usize));
+        let width = self.width as usize;
+        if self.showing_diff() {
+            let lines: Vec<&str> = self.approval_detail.lines().collect();
+            let start = self.approval_scroll.min(self.detail_max_scroll());
+            for line in lines.iter().skip(start).take(vis) {
+                rows.push(pad_line(&color_diff_line(line), width));
+            }
+            while rows.len() < vis {
+                rows.push(" ".repeat(width.max(1)));
+            }
+        } else {
+            let lines = self.output_lines();
+            let max_scroll = lines.len().saturating_sub(vis);
+            let scroll = self.scroll.min(max_scroll);
+            let end = lines.len().saturating_sub(scroll);
+            let start = end.saturating_sub(vis);
+            for line in lines.get(start..end).unwrap_or(&[]) {
+                rows.push(pad_line(line, width));
+            }
+            while rows.len() < vis {
+                rows.insert(0, " ".repeat(width.max(1)));
+            }
         }
         rows.push(self.status_line(active));
         if self.state == ModelState::AwaitingApproval {
-            rows.push(render_approval(&self.approval_prompt, self.width as usize));
+            rows.push(render_approval(
+                &self.approval_prompt,
+                width,
+                self.showing_diff(),
+            ));
         } else {
             rows.push(render_box(&self.input));
         }
@@ -319,7 +414,19 @@ fn strip_ansi_len(s: &str) -> usize {
     n
 }
 
-fn render_approval(prompt: &str, width: usize) -> String {
+fn color_diff_line(line: &str) -> String {
+    if line.starts_with("@@") {
+        format!("{DIM}{line}{RESET}")
+    } else if line.starts_with('+') && !line.starts_with("+++") {
+        format!("{GREEN}{line}{RESET}")
+    } else if line.starts_with('-') && !line.starts_with("---") {
+        format!("{RED}{line}{RESET}")
+    } else {
+        line.to_string()
+    }
+}
+
+fn render_approval(prompt: &str, width: usize, scrollable: bool) -> String {
     let inner = (width.saturating_sub(2)).max(20);
     let body = format!("{prompt}  y/n");
     let mut line = body.chars().take(inner).collect::<String>();
@@ -327,8 +434,13 @@ fn render_approval(prompt: &str, width: usize) -> String {
         line.push_str(&" ".repeat(inner - strip_ansi_len(&line)));
     }
     let bar = "─".repeat(inner);
+    let hint = if scrollable {
+        " y: approve · n/esc: deny · ↑↓ scroll"
+    } else {
+        " y: approve · n/esc: deny"
+    };
     format!(
-        "{YELLOW}╭{bar}╮{RESET}\n{YELLOW}│{RESET}{line}{YELLOW}│{RESET}\n{YELLOW}╰{bar}╯{RESET}\n{DIM} y: approve · n/esc: deny{RESET}"
+        "{YELLOW}╭{bar}╮{RESET}\n{YELLOW}│{RESET}{line}{YELLOW}│{RESET}\n{YELLOW}╰{bar}╯{RESET}\n{DIM}{hint}{RESET}"
     )
 }
 
@@ -341,6 +453,7 @@ enum UiMsg {
     Append(String),
     Approval {
         prompt: String,
+        detail: String,
         reply: SyncSender<bool>,
     },
     AgentDone {
@@ -350,7 +463,11 @@ enum UiMsg {
 }
 
 /// 第 12 课：备用屏 + 管子 + 工作线程。管道 / `BYO_PLAIN_INPUT` 不要走这里。
-pub fn run_tui<P>(mut agent: Agent<P>, subagents: subagent::Registry) -> Result<(), String>
+pub fn run_tui<P>(
+    mut agent: Agent<P>,
+    subagents: subagent::Registry,
+    usage_line: UsageLine,
+) -> Result<(), String>
 where
     P: Provider + Clone + Send + Sync + 'static,
 {
@@ -382,11 +499,12 @@ where
     }
 
     let confirm_tx = ui_tx.clone();
-    agent.confirm = Some(Arc::new(move |prompt: &str| {
+    agent.confirm = Some(Arc::new(move |prompt: &str, detail: &str| {
         let (rtx, rrx) = mpsc::sync_channel(1);
         if confirm_tx
             .send(UiMsg::Approval {
                 prompt: prompt.to_string(),
+                detail: detail.to_string(),
                 reply: rtx,
             })
             .is_err()
@@ -440,6 +558,7 @@ where
     execute!(out, EnterAlternateScreen).map_err(|e| e.to_string())?;
 
     let mut harness = Harness::new(width, height, banner, history);
+    harness.set_usage_line(usage_line);
     let mut pending_reply: Option<SyncSender<bool>> = None;
     let result = event_loop(&mut out, &mut harness, &ui_rx, &job_tx, &mut pending_reply);
 
@@ -466,9 +585,13 @@ where
                 UiMsg::Append(text) => {
                     let _ = harness.apply(HarnessEvent::Append(text));
                 }
-                UiMsg::Approval { prompt, reply } => {
+                UiMsg::Approval {
+                    prompt,
+                    detail,
+                    reply,
+                } => {
                     *pending_reply = Some(reply);
-                    let _ = harness.apply(HarnessEvent::Approval { prompt });
+                    let _ = harness.apply(HarnessEvent::Approval { prompt, detail });
                 }
                 UiMsg::AgentDone { err } => {
                     let _ = harness.apply(HarnessEvent::AgentDone { err });
@@ -613,6 +736,7 @@ mod tests {
         h.state = ModelState::Running;
         let _ = h.apply(HarnessEvent::Approval {
             prompt: "approve?".into(),
+            detail: String::new(),
         });
         assert_eq!(h.state, ModelState::AwaitingApproval);
         let cmd = h.apply(HarnessEvent::Key(ChatKey::Char('y')));
@@ -652,6 +776,20 @@ mod tests {
     }
 
     #[test]
+    fn idle_status_shows_usage_and_running_keeps_the_spinner() {
+        let mut harness = small();
+        let idle = harness.status_line(&[]);
+        assert!(idle.trim().is_empty(), "{idle}");
+        harness.set_usage_line(Arc::new(|| "1,000 in · 0 out · ~¥0.0010".to_string()));
+        let idle = harness.status_line(&[]);
+        assert!(idle.contains("~¥0.0010"), "{idle}");
+        harness.state = ModelState::Running;
+        let running = harness.status_line(&[]);
+        assert!(running.contains("thinking..."), "{running}");
+        assert!(!running.contains('¥'), "{running}");
+    }
+
+    #[test]
     fn approval_view_is_yellow() {
         let mut h = small();
         h.state = ModelState::AwaitingApproval;
@@ -659,5 +797,29 @@ mod tests {
         let view = h.view(&[]);
         assert!(view.contains("approve?"), "{view}");
         assert!(view.contains('╭'), "{view}");
+    }
+
+    #[test]
+    fn write_diff_fills_the_viewport_and_scrolls() {
+        let mut harness = small();
+        let mut detail = String::from("--- /dev/null\n+++ a.txt (new file)\n@@ -0,0 +1,12 @@\n");
+        for index in 0..12 {
+            detail.push_str(&format!("+line-{index}\n"));
+        }
+        let _ = harness.apply(HarnessEvent::Approval {
+            prompt: "approve write to a.txt?".into(),
+            detail,
+        });
+        let top = harness.view(&[]);
+        assert!(top.contains("+line-0"), "{top}");
+        assert!(!top.contains("+line-11"), "{top}");
+        assert!(top.contains("approve write to a.txt?"), "{top}");
+        assert!(top.contains("↑↓ scroll"), "{top}");
+        for _ in 0..20 {
+            let _ = harness.apply(HarnessEvent::PageDown);
+        }
+        let bottom = harness.view(&[]);
+        assert!(bottom.contains("+line-11"), "{bottom}");
+        assert!(!bottom.contains("+line-0"), "{bottom}");
     }
 }

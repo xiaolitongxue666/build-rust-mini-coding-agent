@@ -14,6 +14,9 @@
 //! src/provider/        Provider + DeepSeek / Mock
 //! src/chat.rs          线协议，仅适配器；crate 内可见
 //! src/tools/           Tool + Registry + 各工具一文件
+//! src/mcp/             第 14 课：外部 MCP server → 同一个 Registry
+//! src/agents_context.rs 第 15 课：cwd 的 AGENTS.md → system
+//! src/pricing.rs       第 16 课：分时段人民币账本
 //! src/compact/         CompactionStrategy
 //! src/ui/              banner / spinner / 一次性输入 / 第 12 课整屏
 //! src/agent.rs         内层循环 / 第 11 课 Agent 结构体
@@ -21,6 +24,7 @@
 //! src/commands.rs      斜杠（碰到所有扩展点，留在集成层）
 //! src/delegate.rs      DelegateTool（不进 tools/，避免环）
 //! src/subagent/        Subagent + Research
+//! src/write_diff.rs    第 18 课：write_file 的统一 diff
 //! src/gate.rs          权限门
 //! src/conversation.rs  第 06 课切片辅助
 //! ```
@@ -28,9 +32,15 @@
 //! 依赖方向：`api` 在底。逻辑认 api。UI 可以认逻辑，不要反向。
 //! 第 11 课：`tools` 不认 `subagent`。`agent` 不认 `subagent`。胶水在 `delegate`。
 //! 第 12 课：`ui` 读 `Active()`。`agent` 不再 import `ui`，没有环。
-//! 第 13 课：核心书收束。流式 / MCP / TokenBudget / PermissionPolicy 等点名再写。
+//! 第 13 课：核心书收束。
+//! 第 14 课：MCP 挂进已有 Registry。
+//! 第 15 课：`AGENTS.md` 拼进 system，不当用户消息。
+//! 第 16 课：用量按每次请求的北京时间计价，显示人民币。
+//! 第 17 课：缓存前缀保持稳定。不发 Anthropic 的 cache_control。
+//! 第 18 课：本地 `write_file` 在落盘前给出统一 diff。流式 / TokenBudget 等点名再写。
 
 pub mod agent;
+pub mod agents_context;
 pub mod api;
 pub(crate) mod chat;
 pub mod commands;
@@ -38,11 +48,14 @@ pub mod compact;
 pub mod conversation;
 pub mod delegate;
 pub mod gate;
+pub mod mcp;
+pub mod pricing;
 pub mod provider;
 pub mod repl;
 pub mod subagent;
 pub mod tools;
 pub mod ui;
+pub mod write_diff;
 
 #[cfg(test)]
 mod tests {

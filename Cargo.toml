@@ -72,11 +72,40 @@ name = "lesson_12"
 path = "examples/12-full-tui.rs"
 test = true
 
+[[example]]
+name = "lesson_14"
+path = "examples/14-mcp-support.rs"
+test = true
+
+[[example]]
+name = "lesson_15"
+path = "examples/15-agents-md.rs"
+test = true
+
+[[example]]
+name = "lesson_16"
+path = "examples/16-token-viewer.rs"
+test = true
+
+[[example]]
+name = "lesson_17"
+path = "examples/17-prompt-caching.rs"
+test = true
+
+[[example]]
+name = "lesson_18"
+path = "examples/18-diff-approval.rs"
+test = true
+
 [dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls", "http2", "charset", "system-proxy"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 crossterm = "0.28"
+# 第 14 课：官方 MCP SDK，对齐课上 go-sdk。不手写 JSON-RPC。
+http = "1"
+rmcp = { version = "3.4", default-features = false, features = ["client", "transport-child-process", "transport-streamable-http-client-reqwest"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "sync", "time", "process", "net"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

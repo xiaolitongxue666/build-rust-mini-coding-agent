@@ -38,7 +38,7 @@ mod tests {
     use std::io::BufRead;
 
     use build_rust_mini_coding_agent::agent::agent_loop;
-    use build_rust_mini_coding_agent::api::{Block, Message, Response, Role, StopReason};
+    use build_rust_mini_coding_agent::api::{Block, Message, Response, Role, StopReason, Usage};
     use build_rust_mini_coding_agent::commands::clear_conversation;
     use build_rust_mini_coding_agent::conversation::{
         messages_json, orphaned_tool_result_ids, tool_pairs_intact,
@@ -54,10 +54,12 @@ mod tests {
             Response {
                 content: vec![Block::tool_use("toolu_01abc", "not_a_tool", "{}")],
                 stop_reason: StopReason::ToolUse,
+                usage: Usage::default(),
             },
             Response {
                 content: vec![Block::text("done")],
                 stop_reason: StopReason::EndTurn,
+                usage: Usage::default(),
             },
         ]);
         let mut lines = lines_of("");

@@ -51,7 +51,7 @@ mod tests {
     use std::io::BufRead;
 
     use build_rust_mini_coding_agent::agent::agent_loop;
-    use build_rust_mini_coding_agent::api::{Block, Response, Role, StopReason};
+    use build_rust_mini_coding_agent::api::{Block, Response, Role, StopReason, Usage};
     use build_rust_mini_coding_agent::provider::MockProvider;
 
     fn lines_of(s: &str) -> std::io::Lines<std::io::Cursor<Vec<u8>>> {
@@ -75,10 +75,12 @@ mod tests {
             Response {
                 content: vec![Block::tool_use("c1", "not_a_tool", "{}")],
                 stop_reason: StopReason::ToolUse,
+                usage: Usage::default(),
             },
             Response {
                 content: vec![Block::text("done")],
                 stop_reason: StopReason::EndTurn,
+                usage: Usage::default(),
             },
         ]);
         let mut lines = lines_of("");

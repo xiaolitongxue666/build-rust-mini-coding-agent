@@ -3,7 +3,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use crate::api::{Block, Message, Response, StopReason, ToolDef};
+use crate::api::{Block, Message, Response, StopReason, ToolDef, Usage};
 use crate::provider::Provider;
 
 #[derive(Clone)]
@@ -24,6 +24,7 @@ impl MockProvider {
             responses: vec![Response {
                 content: vec![Block::text(body)],
                 stop_reason: StopReason::EndTurn,
+                usage: Usage::default(),
             }],
             next: Arc::new(AtomicUsize::new(0)),
             sent: Arc::new(Mutex::new(Vec::new())),

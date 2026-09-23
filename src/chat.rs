@@ -58,9 +58,33 @@ pub struct FunctionCall {
     pub arguments: String,
 }
 
+/// 第 16 课：官方 usage。缺字段按 0，不要让旧响应解析失败。
+/// 第 17 课：DeepSeek 用 hit/miss。OpenAI 兼容口用 `prompt_tokens_details.cached_tokens`。
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct PromptTokensDetails {
+    #[serde(default)]
+    pub cached_tokens: u64,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct ChatUsage {
+    #[serde(default)]
+    pub prompt_tokens: u64,
+    #[serde(default)]
+    pub completion_tokens: u64,
+    #[serde(default)]
+    pub prompt_cache_hit_tokens: u64,
+    #[serde(default)]
+    pub prompt_cache_miss_tokens: u64,
+    #[serde(default)]
+    pub prompt_tokens_details: PromptTokensDetails,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ChatResponse {
     pub choices: Vec<Choice>,
+    #[serde(default)]
+    pub usage: ChatUsage,
 }
 
 #[derive(Debug, Deserialize)]

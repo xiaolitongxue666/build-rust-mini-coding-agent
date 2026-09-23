@@ -11,6 +11,7 @@
 //! `Definitions` 必须按名字排序：HashMap 迭代顺序随机，打乱字节会毁掉以后的 prompt cache。
 //! 第 11 课：`Subset` 给子 agent 一份只读工具面。这是策展，不是沙箱。
 //! 不写 `web_fetch`（课上练习）。`DelegateTool` 不进本模块，以免 `tools → subagent → agent → tools`。
+//! 第 14 课：MCP 工具要配置和子进程，不进这个 `OnceLock`。接线在 `repl`。
 
 mod bash;
 mod read_file;
@@ -63,7 +64,7 @@ impl Registry {
         out
     }
 
-    /// 第 09 课：先按名字排序，再给模型。顺序不稳会打乱 prompt cache。
+    /// 第 09 课：先按名字排序，再给模型。第 17 课：顺序差一个字符，前缀单元就对不上。
     pub fn definitions(&self) -> Vec<ToolDef> {
         let mut names: Vec<&String> = self.tools.keys().collect();
         names.sort();

@@ -11,6 +11,7 @@
 //! 第 07 课：`/compact` 和 `/verbose` 用来当场试策略，不用重启。
 //! 第 10 课：命令碰到所有扩展点。搬进独立包就要把状态全传出去，或做成全局。留在集成层。
 //! 第 11 课：`/subagents` 看登记和 `Active()`。REPL 堵住时飞行中的是空的。
+//! 第 16 课：`/tokens` 问 `token_report`。Mock 没有用量，不打印 ¥0。
 
 use std::sync::OnceLock;
 
@@ -103,6 +104,14 @@ fn registry() -> Vec<(&'static str, Command)> {
             },
         ),
         (
+            "tokens",
+            Command {
+                description: "show session token usage and CNY cost",
+                usage: "/tokens",
+                run: cmd_tokens,
+            },
+        ),
+        (
             "tools",
             Command {
                 description: "list available tools",
@@ -175,6 +184,12 @@ fn cmd_model(args: &str, ctx: &mut CommandCtx<'_>) -> CommandOutcome {
     // 第 05 课：不校验 id。错了由下一轮 API 报错。
     ctx.llm.set_model(args.to_string());
     println!("model: {args}");
+    CommandOutcome::Handled
+}
+
+fn cmd_tokens(_args: &str, ctx: &mut CommandCtx<'_>) -> CommandOutcome {
+    let report = ctx.llm.token_report();
+    print!("{}", crate::pricing::format_tokens(report.as_ref()));
     CommandOutcome::Handled
 }
 

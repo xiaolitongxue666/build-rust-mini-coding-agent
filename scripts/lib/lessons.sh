@@ -3,7 +3,7 @@
 #
 # 单课 demo = examples/NN-*.rs。总体 = src/main.rs。
 # 新课：加 example + Cargo.toml 一行 + 这里改 ready / cargo_example:lesson_NN，再并进库。
-# 第 13 课是收束：docs，没有 cargo 目标。14–19 未点名保持 pending。
+# 第 13 课是收束：docs，没有 cargo 目标。第 14–18 课已接线。19 未点名保持 pending。
 # 课上的例子走 Claude；本仓库 ready 课的 live 路径是 DeepSeek。
 #
 # status:
@@ -31,11 +31,11 @@ lesson_catalog() {
 11|ready|Subagents|cargo_example:lesson_11
 12|ready|The full TUI|cargo_example:lesson_12
 13|docs|What's next|
-14|pending|Adding MCP support|
-15|pending|Project context with AGENTS.md|
-16|pending|The token viewer|
-17|pending|Prompt caching|
-18|pending|Diff approval for writes|
+14|ready|Adding MCP support|cargo_example:lesson_14
+15|ready|Project context with AGENTS.md|cargo_example:lesson_15
+16|ready|The token viewer|cargo_example:lesson_16
+17|ready|Prompt caching|cargo_example:lesson_17
+18|ready|Diff approval for writes|cargo_example:lesson_18
 19|pending|Agent memory|
 EOF
 }

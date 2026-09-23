@@ -50,6 +50,7 @@ mod tests {
         h.state = ModelState::Running;
         let _ = h.apply(HarnessEvent::Approval {
             prompt: "approve?".into(),
+            detail: String::new(),
         });
         assert_eq!(h.state, ModelState::AwaitingApproval);
         assert_eq!(

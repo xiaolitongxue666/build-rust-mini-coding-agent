@@ -46,6 +46,7 @@ where
     fn run(&self, task: &str) -> Result<String, String> {
         let _end = begin(self.name());
         let system = research_system(self.provider.model());
+        // 第 15 课：clone 带上项目上下文。这里的 set_system 只换研究用的行为半边。
         let mut agent = Agent::new(self.provider.clone(), system, self.tools.clone());
         agent.name = self.name().to_string();
         agent.log_prefix = "  ↳ ".to_string();

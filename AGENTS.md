@@ -40,7 +40,17 @@
 
 第 12 课：TTY 整屏程序占界面。循环不 import `ui`。`println!` 进管子。审批走通道。管道 / `BYO_PLAIN_INPUT=1` 仍是 `stdin.lines()`。
 
-第 13 课：收束，只有 `follow_along/zh/13-whats-next.md`。不写练习里的 web_fetch / CodeReview / 流式 / PermissionPolicy。14–19 未点名不写。
+第 13 课：收束，只有 `follow_along/zh/13-whats-next.md`。不写练习里的 web_fetch / CodeReview / 流式 / PermissionPolicy。
+
+第 14 课：MCP 挂进已有 Registry，不另开一套工具循环。官方 SDK 是 `rmcp`，async 只留在 `src/mcp/`。`mcp.json` 相对 cwd，缺文件不打日志。失败的 server 跳过。工具名加 server 前缀。登记在 `repl::run_repl`，赶在子 agent 和 stdout 管子之前。退出时 `close`。
+
+第 15 课：cwd 的 `AGENTS.md` 拼进 system，不当用户消息。缺文件不打日志。不往上找，不热重载。`/model` 和子 agent 的 `set_system` 只换行为半边。
+
+第 16 课：用量按每次请求的北京时间（固定 UTC+8）入账，`/tokens` 和空闲状态栏显示人民币。未知模型显示「未知模型」。`token_report` 是默认空方法，不进必须实现的接口。
+
+第 17 课：DeepSeek 磁盘缓存默认开启，请求里不加 `cache_control`。system 固定为第一条，工具按名字排序，压缩只改 `messages`。命中读官方 hit/miss；没有这两栏时读 `prompt_tokens_details.cached_tokens`。不另造写入加价。
+
+第 18 课：只有本地 `write_file` 在落盘前给出统一 diff，仍是一次 y/n。MCP 写文件工具保持普通 `approve?`。diff 不回给模型。19 未点名不写。
 
 ## 例子与总体
 
