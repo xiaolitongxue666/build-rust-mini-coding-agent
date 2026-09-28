@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 publish = false
+default-run = "build-rust-mini-coding-agent"
 description = "用 Rust 按 byo-coding-agent 课程重建的学习用 harness；live 走 DeepSeek"
 
 # 第 10 课：按 Cargo 包布局，不按 Go internal/。
@@ -11,6 +12,11 @@ description = "用 Rust 按 byo-coding-agent 课程重建的学习用 harness；
 # bin = 总体（src/main.rs）。每个 [[example]] = 单课 demo。
 # https://doc.rust-lang.org/cargo/reference/cargo-targets.html#examples
 # test = true：example 里的 #[test] 给 test-lessons.sh 用。
+# loop-ctl 给 scripts/goal-run.sh / loop-tick.sh / graph-run.sh 写状态，不进 REPL。
+
+[[bin]]
+name = "loop-ctl"
+path = "src/bin/loop-ctl.rs"
 
 [[example]]
 name = "lesson_01"

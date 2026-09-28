@@ -22,6 +22,8 @@
 //! src/agent.rs         内层循环 / 第 11 课 Agent 结构体
 //! src/repl.rs          外层 REPL
 //! src/commands.rs      斜杠（碰到所有扩展点，留在集成层）
+//! src/loop_ctl.rs      后学 /goal /loop：外层循环，不进 agent_loop
+//! src/graph_ctl.rs     后学 /graph：显式路由和 checkpoint，不进 agent_loop
 //! src/delegate.rs      DelegateTool（不进 tools/，避免环）
 //! src/subagent/        Subagent + Research
 //! src/write_diff.rs    第 18 课：write_file 的统一 diff
@@ -48,6 +50,8 @@ pub mod compact;
 pub mod conversation;
 pub mod delegate;
 pub mod gate;
+pub mod graph_ctl;
+pub mod loop_ctl;
 pub mod mcp;
 pub mod pricing;
 pub mod provider;
@@ -262,6 +266,54 @@ mod tests {
             Some(commands::CommandOutcome::Handled)
         );
         assert!(messages.is_empty());
+    }
+
+    #[test]
+    fn slash_loop_needs_interval_and_task() {
+        let mut llm = MockProvider::text("x");
+        let tools = tools::default_tool_defs();
+        let mut messages = vec![api::Message::user_text("hi")];
+        let compact = compact::NoCompaction;
+        let mut verbose = false;
+        let mut ctx = commands::CommandCtx {
+            llm: &mut llm,
+            messages: &mut messages,
+            tools: &tools,
+            compact: &compact,
+            verbose: &mut verbose,
+            subagents: commands::no_subagents(),
+        };
+        assert_eq!(
+            commands::run_command("/loop", &mut ctx),
+            Some(commands::CommandOutcome::Handled)
+        );
+        assert_eq!(
+            commands::run_command("/loop 15m", &mut ctx),
+            Some(commands::CommandOutcome::Handled)
+        );
+        assert_eq!(messages.len(), 1);
+    }
+
+    #[test]
+    fn slash_graph_is_handled() {
+        let mut llm = MockProvider::text("x");
+        let tools = tools::default_tool_defs();
+        let mut messages = vec![api::Message::user_text("hi")];
+        let compact = compact::NoCompaction;
+        let mut verbose = false;
+        let mut ctx = commands::CommandCtx {
+            llm: &mut llm,
+            messages: &mut messages,
+            tools: &tools,
+            compact: &compact,
+            verbose: &mut verbose,
+            subagents: commands::no_subagents(),
+        };
+        assert_eq!(
+            commands::run_command("/graph", &mut ctx),
+            Some(commands::CommandOutcome::Handled)
+        );
+        assert_eq!(messages.len(), 1);
     }
 
     // 第 06 课：system 在 Provider / 线协议上，不在通用切片里。

@@ -19,7 +19,9 @@
    - 中文站：[walkinglabs.github.io/learn-harness-engineering](https://walkinglabs.github.io/learn-harness-engineering/)
    - 只做 Lecture 13：[从手动提示到自动循环](https://github.com/walkinglabs/learn-harness-engineering/blob/main/docs/en/lectures/lecture-13-loop-engineering/index.md)
    - 只做 Project 07：[Build Your First Automated Loop](https://github.com/walkinglabs/learn-harness-engineering/blob/main/docs/en/projects/project-07-loop-engineering-first-loop/index.md)，中文：[搭建你的第一个自动循环](https://walkinglabs.github.io/learn-harness-engineering/zh/projects/project-07-loop-engineering-first-loop/)
-   - P01–P06 是 harness 本体，本仓库已覆盖，跳过
+   - Lecture 14 只做第一张图：[`loops/graph.md`](../../loops/graph.md) + `/graph`。research 节点和并行未做
+   - P01–P06 的练习不重做。Lecture 05 的跨会话交接本仓库没有：第 07 课只在同一会话里压缩。读过的结论在下面「已读笔记」
+   - Lecture 13 的 `/goal` `/loop`、Lecture 14 的 `/graph` 已接到 REPL 斜杠；引擎在 `loops/`、`src/loop_ctl.rs`、`src/graph_ctl.rs`，不改 `agent_loop`
 
 3. **Design Your Own Coding Agent Harness**（选读：沙箱、持久执行、评测、远程）
    - 视频：[Design Your Own Coding Agent Harness](https://www.youtube.com/watch?v=sJpop1juVBQ)（2026-08，Pydantic AI）
@@ -70,10 +72,10 @@
 
 ## 后学要补的四问
 
-- State 放哪：现在只有内存里的 `messages`，输入历史不是任务状态
-- Verify 怎么做：`scripts/check.sh` 测的是这个 harness，不是「agent 改完代码后自己验收」
-- Failure 怎么恢复：工具错误会回到模型；没有「目标没完成就从状态文件再开一轮」
-- 什么时候停：模型不再要工具，或人退出。没有「目标达成 / 轮数上限」
+- State 放哪：对话仍在内存里的 `messages`。任务状态在 `.local/loop/loop-state.md`。图的 checkpoint 在 `.local/graph/<thread>/state.md`。第五讲和 dsh / Pi / Cursor 的读法见「已读笔记」
+- Verify 怎么做：`scripts/check.sh` 测的是这个 harness。`/goal` 和 `/graph` 的 checker 是 `goal.md` 里的验证命令退出码，不叫模型
+- Failure 怎么恢复：工具错误会回到模型。`/goal` 失败时读 `loop-state.md` 再开一轮 maker。`/graph` 的 verify fail 按路由表回到 implement
+- 什么时候停：普通对话仍是模型不再要工具，或人退出。`/goal` 停在验证通过、最大回合、或 `/goal stop`。`/loop` 停在 `/loop stop`。`/graph` 停在 pause（等人 `/graph approve`）、blocked、done、或 `/graph stop`
 
 ```mermaid
 flowchart TD
@@ -83,24 +85,69 @@ flowchart TD
     worktree --> ghaw[Issue到Draft PR]
 ```
 
-## 阶段 A · 自动循环（清单第 2 套，跳过已会的）
+## 已读笔记 · 跨会话交接
 
-主教材是 [walkinglabs/learn-harness-engineering](https://github.com/walkinglabs/learn-harness-engineering)。不要把 P01–P06 再做一遍。只做：
+读过，不实现。不改 `src/`，不把 [第五讲](https://walkinglabs.github.io/learn-harness-engineering/zh/lectures/lecture-05-why-long-running-tasks-lose-continuity/) 或 Project 03 做成练习。
 
-- Lecture 13：[从手动提示到自动循环](https://github.com/walkinglabs/learn-harness-engineering/blob/main/docs/en/lectures/lecture-13-loop-engineering/index.md)
-- Project 07：[Build Your First Automated Loop](https://github.com/walkinglabs/learn-harness-engineering/blob/main/docs/en/projects/project-07-loop-engineering-first-loop/index.md)，中文：[搭建你的第一个自动循环](https://walkinglabs.github.io/learn-harness-engineering/zh/projects/project-07-loop-engineering-first-loop/)
+### 第五讲：快满时交给下一会话的是文件
 
-按这个顺序做三个实验，都在**另一个小目录**里，不改本仓库的 agent 循环：
+上下文大约超过窗口的 60% 就准备交接。大约 30 分钟内能做完的留在当前会话。不把 `messages` 贴进下一会话。
 
-- Goal loop：`goal.md`，人还在旁边看
-- Timer loop：同一件事定时再跑
-- Maker-checker：写的人和验的人分开；状态在 `loop-state.md`；停在「验收通过」或轮数上限
+最小进度文件四个字段：仓库状态（commit）、运行时状态（测试通过率）、阻塞项、下一步。会再次被推翻的选择另记：决定、原因、否决方案、约束。git 提交是检查点。上班先读这些文件再跑检查，从「下一步」继续；下班先更新文件、跑检查、再提交。
 
-模板就在该仓库：`goal-template.md`、`loop-state-template.md`、`maker-prompt.md`、`checker-prompt.md`。
+第 07 课的压缩留在同一会话，留下「做了什么」，决策理由容易没了。第五讲要的重置是清空短期记忆，用文件重建。有的模型接近窗口上限会赶工、跳过验证，所以交接发生在顶满之前。主要靠压缩还是靠重置，要看具体模型。
 
-对照可运行的 goal 终点（清单第 4 套里的 learn-claude-code，读 `s17`，不要从 `s01` 重写）：
+### dsh、Pi、Cursor：快满时仍留在同一条会话
 
-- [shareAI-lab/learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) 的 `s17_goal_loop`
+| | 快满时 | 空白的下一条会话 |
+|---|---|---|
+| DSH | 默认 [`dsh-compaction-basic`](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/compaction/compaction-basic/README.md)。门槛 `floor(min(W×0.8, W−O−65536))`，最近约 `(W−O)×0.16` 原文留下。旧表面换成一条带 `<compacted-summary>` 的 user 消息。摘要固定八节：意图、技术概念、文件、错误与修复、未完成、当前工作、下一步、关键上下文。 | 官方 `fork` 克隆已结束回合的事件前缀。干净摘要进新会话靠社区插件，例如 [dsh-session-handoff](https://github.com/WeiYe6/dsh-session-handoff) 的 `/handoff`。 |
+| Pi | [压缩](https://pi.dev/docs/latest/compaction) 写进 `~/.pi/agent/sessions/` 的 JSONL。`contextTokens > contextWindow − 16384` 时摘要旧段，最近约 20000 token 留下。摘要含目标、约束、进度、决策、下一步、关键上下文和文件清单。`/resume` 仍是这份文件。 | 示例 [`handoff.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/examples/extensions/handoff.ts) 由人执行 `/handoff`，生成可编辑提示再 `newSession`。自动按分支注入的是第三方 [pi-handoff](https://github.com/FleetingEcho/pi-handoff)。 |
+| Cursor | [同一条聊天里压缩](https://cursor.com/docs/agent/prompting)。文档写「接近满」；论坛工作人员说过大约 90%，门槛在服务端。`/summarize` 可提前做。 | 新聊天不带上一条的任务状态。[Rules](https://cursor.com/docs/rules) 和 `AGENTS.md` 每次都在，那是约定，不是进度。`@Chats` 显式引用旧对话。`--resume` 继续同一条线程。 |
+
+### 一条会话再叫子 agent，和再开一条会话不是同一条路
+
+| | 模型能叫的子 agent | 人另开的会话 |
+|---|---|---|
+| DSH | [`dsh-tool-subagent`](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/subagent/tool-subagent/README.md)。`spawn` 是空白子会话；`fork` 带上父会话已结束的回合。one-shot 做完把结果交回。continuable 持久化，父会话用 `send_message` 再发；子会话不在内存里就从自己的日志冷启动。 | `/handoff` 插件，以及 `ctx.sessions.fork` |
+| Pi | 内核没有这个工具。内置工具是 `read`、`bash`、`edit`、`write`，外加可选的 `grep`、`find`、`ls`。扩展才注册，例如 [pi-subagents](https://pi.dev/packages/pi-subagents) 的 `subagent`。子会话默认空白；有的扩展可用 `session: fork` 从父会话当前叶子分出。 | `/new`、`/fork`、`/clone`、示例 `/handoff` |
+| Cursor | [Task 工具](https://cursor.com/docs/subagents)。内置 `explore`、`bash`、`browser`。子 agent 自己的窗口，看不到父会话历史，父会话把需要的内容写进提示。主会话和直接子 agent 还能再拉一层，再下一层不能。可用 agent id 恢复。 | `/fork`、`/side`、`/in-cloud`。子 agent 的 worktree 仍算在同一条用户会话里。 |
+
+三家都不会在上下文快满时自动改开一条空白会话。进度要进下一条空白会话，靠人触发或插件把短文档注入。本仓库第 11 课的 Research 是一次性只读子循环，没有 continuable。`/goal` 的进度写在 `.local/loop/loop-state.md`，不进 `agent_loop`。
+
+## 已读笔记 · 图工程
+
+读过 [第十四讲](https://walkinglabs.github.io/learn-harness-engineering/zh/lectures/lecture-14-graph-engineering/)。prompt / context / loop / graph 是叠加，不是替换。图的四零件：节点、边、共享状态、路由。单循环把「失败回哪」藏在同一段上下文里；图写在纸上。
+
+六步：状态 → 节点 → 边 → 路由 → checkpoint → 跑。本仓库第一张图是 maker-checker：`implement` → `verify` → pass 则 `pause`（merge 前等人 `/graph approve`），fail 则回到 `implement`。verify 只看验证命令退出码，不继承 implement 的对话。`merge` 只写完成状态，不自动 `git commit`。
+
+未做：research 节点、并行 fan-out、LangGraph / LangChain。编排税仍在：节点可以并行，审阅带宽是串行的。五个判据至少三条才值得再加节点。
+
+蓝图在 [`loops/graph.md`](../../loops/graph.md)。checkpoint 在 `.local/graph/<thread>/state.md`。
+
+## 阶段 A · 自动循环（清单第 2 套）
+
+主教材是 [walkinglabs/learn-harness-engineering](https://github.com/walkinglabs/learn-harness-engineering) 的 [第十三讲](https://walkinglabs.github.io/learn-harness-engineering/zh/lectures/lecture-13-loop-engineering/) 和 [Project 07](https://walkinglabs.github.io/learn-harness-engineering/zh/projects/project-07-loop-engineering-first-loop/)。P01–P06 不重做。`agent_loop` 没改。
+
+有终点用 `/goal`，没终点、只要反复看一眼用 `/loop`。`/loop` 不读、不写 `loop-state.md`。
+
+| 斜杠 | 作用 |
+|---|---|
+| `/goal <目标>` | 用 [`loops/goal.md`](../../loops/goal.md) 武装，运行副本在 `.local/loop/` |
+| `/goal` | 看目标、验证命令、轮次 |
+| `/goal run` | 后台跑 [`scripts/goal-run.sh`](../../scripts/goal-run.sh) |
+| `/goal stop` | 写停止标记 |
+| `/loop <间隔> <巡检>` | 例如 `/loop 15m 跑测试，失败只报告` |
+| `/loop run` / `/loop stop` | 启动或停 [`scripts/loop-tick.sh`](../../scripts/loop-tick.sh) |
+| `/graph <目标>` | 武装默认 thread `session-1`，共用 `goal.md` 的验证命令 |
+| `/graph` | 看当前节点、review、attempts |
+| `/graph run [thread]` | 后台 [`scripts/graph-run.sh`](../../scripts/graph-run.sh)，走到 pause 停 |
+| `/graph approve` | 只在 pause 时放行 merge |
+| `/graph stop` | 写停止标记 |
+
+模板在 [`loops/`](../../loops/goal.md)。验证命令仍是 `REPLACE_ME` 时 `/goal run` 和 `/graph run` 拒绝。Checker 只看该命令退出码。Maker 是一次 `BYO_ONCE=1` 的现有 harness。
+
+对照：[shareAI-lab/learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) 的 `s17_goal_loop`（读 `s17`，不要从 `s01` 重写）。
 
 ## 阶段 B · 自己写 /goal（原第三阶段）
 
@@ -154,7 +201,7 @@ Issue → worktree/branch → Agent → verify.sh → 失败再修 → commit �
 - 第 3 套：持久执行、沙箱、评测、远程并行。read / write / edit / bash 不再做
 - 第 4 套：worktree / teams / cron 看 learn-claude-code 的 Rust 端口；Pi 分层看 [bigfish1913/pi-rust](https://github.com/bigfish1913/pi-rust)；技能从经验里长出来只读 Hermes 架构
 - 第 5 套：意图和执行分开、策略和沙箱分开、用证据判断做完。前半 CLI 循环不重做
-- 清单第 2 套做完 Project 07 之后，可选 Lecture 14 / Project 08：[lecture-14-graph-engineering](https://github.com/walkinglabs/learn-harness-engineering/blob/main/docs/en/lectures/lecture-14-graph-engineering/index.md)
+- 清单第 2 套的 Lecture 14 第一张图已接到 `/graph`。Project 08 的其余练习（research 节点、并行）未做
 
 也不做：把本仓库改成 Pi 移植、用另一门 Rust 课把 01–18 再写一遍、在未点名时补第 19 课。
 

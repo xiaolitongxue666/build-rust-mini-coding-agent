@@ -48,4 +48,4 @@ live 仍是 DeepSeek，不是 Claude。
 
 ## 书外的循环
 
-第 13 课停在这本书的缝：流式、`PermissionPolicy`、会话存盘、第 19 课 memory，点名再写。书外的自动循环、`/goal`、worktree、Issue 到 PR，在 [next-learning.md](next-learning.md)。
+第 13 课停在这本书的缝：流式、`PermissionPolicy`、会话存盘、第 19 课 memory，点名再写。书外的 `/goal` `/loop` `/graph`、worktree、Issue 到 PR，在 [next-learning.md](next-learning.md)。不改本课、不加 example。

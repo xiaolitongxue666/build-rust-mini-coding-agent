@@ -9,6 +9,7 @@
 //! 第 10 课：REPL 是接线层，对齐课上 `main.go` 里那层循环。
 //! 第 11 课：这里 `register_subagents`，再 new 根 `Agent`。DelegateTool 不进 tools 模块。
 //! 第 12 课：TTY 走 `run_tui`；`BYO_PLAIN_INPUT` / 非 TTY 仍是同步 REPL。
+//! 后学：`BYO_ONCE=1` 时一行用户输入跑完就退出，给 `scripts/goal-run.sh` 当一次 maker。
 //! 第 14 课：`mcp::setup` 在子 agent 和 `run_tui` 之前。连接错误打在真终端上。
 //! 第 15 课：`AGENTS.md` 在 clone 子 agent 之前焊上。`Agent::new` 传入的是行为半边，不是拼好的全文。
 //! 第 16 课：状态栏闭包和 provider 共享同一份账本。
@@ -101,6 +102,10 @@ fn use_plain_input() -> bool {
         || !io::stdin().is_terminal()
 }
 
+fn use_once() -> bool {
+    matches!(std::env::var("BYO_ONCE").ok().as_deref(), Some("1"))
+}
+
 fn run_plain<P>(agent: &mut Agent<P>, subagents: &subagent::Registry)
 where
     P: Provider + Clone + Send + 'static,
@@ -142,6 +147,9 @@ where
                 // 第 06 课 / 第 11 课：`Send` 自己 append user。
                 if let Err(err) = agent.send_with(text, input) {
                     println!("{err}");
+                }
+                if use_once() {
+                    return;
                 }
             }
         }

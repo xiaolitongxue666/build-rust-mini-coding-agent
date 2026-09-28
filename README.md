@@ -31,7 +31,7 @@ flowchart TD
     tui --> inputNode[你的输入]
     plain --> inputNode
     inputNode --> slash{以斜杠开头?}
-    slash -->|是| slashCmd["/help /model /tokens /clear /compact /exit"]
+    slash -->|是| slashCmd["/help /model /tokens /clear /compact /exit /goal /loop /graph"]
     slashCmd --> inputNode
     slash -->|否| appendUser[追加 user 消息]
     appendUser --> compact[压缩策略 默认不动]
@@ -53,7 +53,7 @@ flowchart TD
 - 第 14 课：[MCP](follow_along/zh/14-mcp-support.md) 挂进同一套工具表。没有 `mcp.json` 不打日志。退出时关掉子进程。
 - 第 11 课：[Research](follow_along/zh/11-subagents.md) 只有 `read_file`，自己再跑一圈，不进这张图的审批。
 - 第 12 课：终端是 TTY 走[整屏](follow_along/zh/12-full-tui.md)；管道或 `BYO_PLAIN_INPUT=1` 走 stdin。
-- 第 05 / 16 课：斜杠不进模型。图上是常用的几个；另外还有 `/tools`、`/subagents`、`/verbose`。
+- 第 05 / 16 课：斜杠不进模型。图上是常用的几个；另外还有 `/tools`、`/subagents`、`/verbose`。后学 `/goal` `/loop` `/graph` 也不进模型，不改内层循环；状态在 `.local/loop/` 和 `.local/graph/`。
 - 第 07 课：默认 `NoCompaction`，不改 system。换成 sliding / summarize 后，下一轮从压缩后的 `messages` 再调用。
 - 第 16 / 17 课：每次响应按北京时间把 token 计入人民币。[磁盘缓存](follow_along/zh/17-prompt-caching.md)默认开着，请求里不加 `cache_control`。
 - 第 18 课：只有本地 [`write_file`](follow_along/zh/18-diff-approval.md) 先给统一 diff。其它工具，包括 MCP 写文件，仍是一次 `approve?`。拒绝不把 diff 交回模型。
@@ -127,7 +127,7 @@ Assistant 消息必须原样追加。漏了，下一轮孤立的 `tool_result` �
 - [17 · 提示词缓存](follow_along/zh/17-prompt-caching.md)
 - [18 · 写文件前看 diff](follow_along/zh/18-diff-approval.md)
 - 19 · Agent memory（未写）
-- [后学](follow_along/zh/next-learning.md)（书外顺序，不是某一章的对课）
+- [后学](follow_along/zh/next-learning.md)（书外顺序：`/goal` `/loop` `/graph`，不是某一章的对课）
 
 ## 怎么跑
 
@@ -163,6 +163,7 @@ bash scripts/run.sh 15            # 第 15 课 demo（读 cwd 的 AGENTS.md；�
 bash scripts/run.sh 16            # 第 16 课 demo（/tokens，人民币，分时段）
 bash scripts/run.sh 17            # 第 17 课 demo（磁盘缓存；不发 cache_control）
 bash scripts/run.sh 18            # 第 18 课 demo（write_file 先看 diff）
+# 后学斜杠在总体 REPL：/goal /loop /graph（模板 loops/，运行副本 .local/）
 ```
 
 Windows PowerShell：`.\scripts\bootstrap.ps1`

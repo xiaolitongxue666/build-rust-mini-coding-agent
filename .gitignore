@@ -13,6 +13,9 @@ target
 .idea/
 *.swp
 .local/
+# /goal /loop 运行副本：.local/loop/
+# /graph checkpoint：.local/graph/<thread>/
+.local/memory-draft.md
 
 # OS
 .DS_Store

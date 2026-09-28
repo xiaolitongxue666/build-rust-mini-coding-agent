@@ -52,6 +52,8 @@
 
 第 18 课：只有本地 `write_file` 在落盘前给出统一 diff，仍是一次 y/n。MCP 写文件工具保持普通 `approve?`。diff 不回给模型。19 未点名不写。
 
+后学（walkinglabs，不是 byoharness 第 13 课）：`/goal` `/loop` `/graph` 在斜杠拦截，模板在 `loops/`，运行副本在 `.local/`。不改 `agent_loop`。不引入 LangGraph / LangChain。`/graph` 第一张图只做 implement → verify → pause → merge；research 节点和并行未做。
+
 ## 例子与总体
 
 官网只冻 `examples/minimal`，`main.go` 接线全功能。本仓库：

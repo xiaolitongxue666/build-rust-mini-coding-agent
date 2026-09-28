@@ -12,12 +12,22 @@
 //! 第 10 课：命令碰到所有扩展点。搬进独立包就要把状态全传出去，或做成全局。留在集成层。
 //! 第 11 课：`/subagents` 看登记和 `Active()`。REPL 堵住时飞行中的是空的。
 //! 第 16 课：`/tokens` 问 `token_report`。Mock 没有用量，不打印 ¥0。
+//! 后学：`/goal` 有终点；`/loop` 没终点、按间隔再看一眼。`/graph` 把失败回哪写在路由表上。都不进 `messages`。
 
 use std::sync::OnceLock;
 
 use crate::api::{Message, ToolDef};
 use crate::compact::{
     print_compaction, CompactionStrategy, NoCompaction, SlidingWindow, Summarize,
+};
+use crate::graph_ctl::{
+    active_thread, after_approve, after_merge, arm_graph, graph_run_block_reason,
+    graph_status_text, parse_thread, read_checkpoint, spawn_graph, write_checkpoint,
+    write_graph_stop, DEFAULT_THREAD,
+};
+use crate::loop_ctl::{
+    arm_goal, arm_patrol, cwd_root, goal_run_block_reason, goal_status_text,
+    patrol_run_block_reason, patrol_status_text, spawn_runner, write_stop, LoopKind,
 };
 use crate::provider::Provider;
 use crate::subagent;
@@ -80,11 +90,35 @@ fn registry() -> Vec<(&'static str, Command)> {
             },
         ),
         (
+            "goal",
+            Command {
+                description: "arm or run a goal loop (has an end)",
+                usage: "/goal [run|stop|<goal>]",
+                run: cmd_goal,
+            },
+        ),
+        (
+            "graph",
+            Command {
+                description: "run the maker-checker graph (pause before merge)",
+                usage: "/graph [run|stop|approve|<goal>]",
+                run: cmd_graph,
+            },
+        ),
+        (
             "help",
             Command {
                 description: "show available commands",
                 usage: "/help",
                 run: cmd_help,
+            },
+        ),
+        (
+            "loop",
+            Command {
+                description: "arm or run a patrol loop (no end)",
+                usage: "/loop [run|stop|<interval> <task>]",
+                run: cmd_loop,
             },
         ),
         (
@@ -161,6 +195,190 @@ fn cmd_clear(_args: &str, ctx: &mut CommandCtx<'_>) -> CommandOutcome {
 
 fn cmd_exit(_args: &str, _ctx: &mut CommandCtx<'_>) -> CommandOutcome {
     CommandOutcome::Quit
+}
+
+fn cmd_graph(args: &str, _ctx: &mut CommandCtx<'_>) -> CommandOutcome {
+    let root = match cwd_root() {
+        Ok(root) => root,
+        Err(err) => {
+            println!("{err}");
+            return CommandOutcome::Handled;
+        }
+    };
+    if args.is_empty() {
+        print!("{}", graph_status_text(&root, &active_thread(&root)));
+        return CommandOutcome::Handled;
+    }
+    if args == "approve" {
+        let thread = active_thread(&root);
+        match read_checkpoint(&root, &thread).and_then(|state| after_approve(&state)) {
+            Ok(paused) => match after_merge_step(&root, paused) {
+                Ok(()) => println!("approved. merge done for {thread}"),
+                Err(err) => println!("{err}"),
+            },
+            Err(err) => println!("{err}"),
+        }
+        return CommandOutcome::Handled;
+    }
+    if args == "stop" {
+        let thread = active_thread(&root);
+        match write_graph_stop(&root, &thread) {
+            Ok(()) => println!("graph stop written ({thread})"),
+            Err(err) => println!("{err}"),
+        }
+        return CommandOutcome::Handled;
+    }
+    if args == "run" || args.starts_with("run ") {
+        let thread = if args == "run" {
+            active_thread(&root)
+        } else {
+            match parse_thread(args[4..].trim()) {
+                Ok(t) => t,
+                Err(err) => {
+                    println!("{err}");
+                    return CommandOutcome::Handled;
+                }
+            }
+        };
+        if let Some(reason) = graph_run_block_reason(&root, &thread) {
+            println!("{reason}");
+            return CommandOutcome::Handled;
+        }
+        match spawn_graph(&root, &thread) {
+            Ok(log) => println!("graph runner started. log {}", log.display()),
+            Err(err) => println!("{err}"),
+        }
+        return CommandOutcome::Handled;
+    }
+    match arm_graph(&root, DEFAULT_THREAD, args) {
+        Ok(state) => {
+            println!(
+                "graph armed thread={} goal={}",
+                state.thread, state.requirements
+            );
+            if let Ok(spec) = crate::loop_ctl::read_goal(&root) {
+                if crate::loop_ctl::is_placeholder_verify(&spec.verify_command) {
+                    println!(
+                        "verify is still {}. edit {}/goal.md then /graph run",
+                        crate::loop_ctl::PLACEHOLDER_VERIFY,
+                        crate::loop_ctl::RUN_DIR
+                    );
+                } else {
+                    println!("next: /graph run");
+                }
+            }
+        }
+        Err(err) => println!("{err}"),
+    }
+    CommandOutcome::Handled
+}
+
+fn after_merge_step(
+    root: &std::path::Path,
+    state: crate::graph_ctl::GraphState,
+) -> Result<(), String> {
+    write_checkpoint(root, &state)?;
+    let merged = after_merge(&state);
+    write_checkpoint(root, &merged)
+}
+
+fn cmd_goal(args: &str, _ctx: &mut CommandCtx<'_>) -> CommandOutcome {
+    let root = match cwd_root() {
+        Ok(root) => root,
+        Err(err) => {
+            println!("{err}");
+            return CommandOutcome::Handled;
+        }
+    };
+    if args.is_empty() {
+        print!("{}", goal_status_text(&root));
+        return CommandOutcome::Handled;
+    }
+    match args {
+        "run" => {
+            if let Some(reason) = goal_run_block_reason(&root) {
+                println!("{reason}");
+                return CommandOutcome::Handled;
+            }
+            match spawn_runner(&root, LoopKind::Goal) {
+                Ok(log) => println!("goal runner started. log {}", log.display()),
+                Err(err) => println!("{err}"),
+            }
+        }
+        "stop" => match write_stop(&root, LoopKind::Goal) {
+            Ok(()) => println!("goal stop written"),
+            Err(err) => println!("{err}"),
+        },
+        objective => match arm_goal(&root, objective) {
+            Ok(spec) => {
+                println!("goal armed: {}", spec.objective);
+                if crate::loop_ctl::is_placeholder_verify(&spec.verify_command) {
+                    println!(
+                        "verify is still {}. edit {}/goal.md then /goal run",
+                        crate::loop_ctl::PLACEHOLDER_VERIFY,
+                        crate::loop_ctl::RUN_DIR
+                    );
+                } else {
+                    println!("next: /goal run");
+                }
+            }
+            Err(err) => println!("{err}"),
+        },
+    }
+    CommandOutcome::Handled
+}
+
+fn cmd_loop(args: &str, _ctx: &mut CommandCtx<'_>) -> CommandOutcome {
+    let root = match cwd_root() {
+        Ok(root) => root,
+        Err(err) => {
+            println!("{err}");
+            return CommandOutcome::Handled;
+        }
+    };
+    if args.is_empty() {
+        print!("{}", patrol_status_text(&root));
+        return CommandOutcome::Handled;
+    }
+    match args {
+        "run" => {
+            if let Some(reason) = patrol_run_block_reason(&root) {
+                println!("{reason}");
+                return CommandOutcome::Handled;
+            }
+            match spawn_runner(&root, LoopKind::Patrol) {
+                Ok(log) => println!("patrol runner started. log {}", log.display()),
+                Err(err) => println!("{err}"),
+            }
+        }
+        "stop" => match write_stop(&root, LoopKind::Patrol) {
+            Ok(()) => println!("patrol stop written"),
+            Err(err) => println!("{err}"),
+        },
+        other => {
+            let (interval, rest) = match other.split_once(char::is_whitespace) {
+                Some((i, r)) => (i, r.trim()),
+                None => {
+                    println!(
+                        "usage: /loop <interval> <task>  (example: /loop 15m 跑测试，失败只报告)"
+                    );
+                    return CommandOutcome::Handled;
+                }
+            };
+            if rest.is_empty() {
+                println!("usage: /loop <interval> <task>  (example: /loop 15m 跑测试，失败只报告)");
+                return CommandOutcome::Handled;
+            }
+            match arm_patrol(&root, interval, rest) {
+                Ok(spec) => println!(
+                    "patrol armed every {} ({}s): {}",
+                    spec.interval, spec.interval_secs, spec.prompt
+                ),
+                Err(err) => println!("{err}"),
+            }
+        }
+    }
+    CommandOutcome::Handled
 }
 
 fn cmd_help(_args: &str, _ctx: &mut CommandCtx<'_>) -> CommandOutcome {
