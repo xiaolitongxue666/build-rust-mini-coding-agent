@@ -127,6 +127,7 @@ Assistant 消息必须原样追加。漏了，下一轮孤立的 `tool_result` �
 - [17 · 提示词缓存](follow_along/zh/17-prompt-caching.md)
 - [18 · 写文件前看 diff](follow_along/zh/18-diff-approval.md)
 - 19 · Agent memory（未写）
+- [后学](follow_along/zh/next-learning.md)（书外顺序，不是某一章的对课）
 
 ## 怎么跑
 

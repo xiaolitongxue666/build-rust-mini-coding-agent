@@ -22,3 +22,4 @@
 20) **第 17 课缓存** — DeepSeek 磁盘缓存默认开，不发 cache_control。前缀单元必须完整匹配。system 是第一条且不含时间；工具按名字排序；压缩只改 messages。hit/miss 优先，否则用 prompt_tokens_details.cached_tokens。不造 cache write 加价。官方说明：https://api-docs.deepseek.com/guides/kv_cache
 21) **第 18 课 diff** — 只认本地 write_file。落盘前读当前文件，统一 diff，上下文 3 行。新文件用 /dev/null，相同字节是 (no changes)。一次 y/n。MCP 写工具仍是 approve?。diff 不进 tool_result。TUI 用 ANSI 上色，不上 Chroma。快照不刷新。
 22) **根 README** — 中文课程首页。Mermaid 画 run_repl 一圈，ASCII 画内层循环，课号链到 follow_along/zh/。不画第 19 课、流式、记忆。脚本与密钥隔离留在「怎么跑」。不改 agent-config 的 README。
+23) **后学** — follow_along/zh/next-learning.md 是书外学习顺序，不是第 19 课，也不是 byoharness 对课。README 课表 19 后链这一份；第 13 课收束后加「书外的循环」。主线：Learn Harness Engineering Lecture 13 / Project 07 → 自己的 /goal + verify.sh → worktree → github/gh-aw。不把 01–18 再用另一门 Rust 课写一遍。
